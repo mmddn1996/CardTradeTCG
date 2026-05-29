@@ -64,8 +64,3 @@ function toResult(c: SampleCard): CatalogCardResult {
     imageUrl: c.imageUrl ?? null,
   };
 }
-
-/** Provider registry — Stage 2 swaps Mock entries for real implementations. */
-export function getProvider(game: Game): CatalogProvider {
-  return new MockProvider(game);
-}

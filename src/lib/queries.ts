@@ -79,6 +79,13 @@ export async function getCatalogCard(id: string) {
   });
 }
 
+export async function getCatalogGaps() {
+  return prisma.catalogGap.findMany({
+    where: { status: "OPEN" },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function getDashboardStats(userId: string) {
   const inventory = await getInventoryForUser(userId);
   const collectionValue = inventory.reduce(

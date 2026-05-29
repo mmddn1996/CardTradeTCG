@@ -17,13 +17,12 @@ export default async function CollectionPage() {
             {inventory.length} card{inventory.length === 1 ? "" : "s"} digitised
           </p>
         </div>
-        <button
-          disabled
-          title="Available in Stage 2"
-          className="rounded-lg bg-accent-strong/40 text-foreground/60 px-3 py-2 text-sm cursor-not-allowed"
+        <Link
+          href="/add"
+          className="rounded-lg bg-accent-strong px-3 py-2 text-sm font-medium"
         >
-          + Add card (Stage 2)
-        </button>
+          + Add card
+        </Link>
       </div>
 
       {inventory.length === 0 ? (

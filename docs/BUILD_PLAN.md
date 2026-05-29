@@ -53,13 +53,18 @@ working product sooner.
 - Reusable **Value badge** component (value + "as of" timestamp + source) per §4.5.
 - Mock catalog/pricing provider.
 
-### Stage 2 — Add cards (code lookup)
-- "Add card" flow: search/lookup by set + collector number (Pokémon) or card ID
-  e.g. `OP01-001` (One Piece).
-- Real Pokémon TCG API + One Piece provider behind the provider interface;
-  price snapshot caching with freshness window (§3.3 stale-price guard).
-- Condition band selection (§3.2); declared value rules (§3.3 ceiling).
-- Catalog-gap queue for unmatched lookups (§4.6).
+### Stage 2 — Add cards (code lookup)  ← *done*
+- ✅ "Add card" flow at `/add`: code lookup + free-text search per game
+  (Pokémon by number/id, One Piece by `OP01-001` etc.), tap-to-add results.
+- ✅ Real Pokémon TCG API + One Piece providers behind the `CatalogProvider`
+  interface, selected by `CARDSWAP_PROVIDERS` (`mock` default / `live`); live
+  calls fail closed when hosts aren't allowlisted.
+- ✅ Freshness-guarded pricing (`ensurePricing`, 24h window, §3.3 stale-price
+  guard) writing per-band `PriceSnapshot`s.
+- ✅ Condition band selection (§3.2); declared-value ceiling clamp (§3.3).
+- ✅ Catalog-gap queue + review page for unmatched lookups; manual-entry
+  fallback creates an unpriced card and files a gap (§4.6).
+- ✅ Unit tests for the value rules (clamp, freshness, band derivation).
 
 ### Stage 3 — Trading & negotiation engine
 - `Offer`, `Trade`, baskets; HAVE/WANT listings wired to offers.

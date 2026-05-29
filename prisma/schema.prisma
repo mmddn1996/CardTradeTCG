@@ -101,3 +101,18 @@ model Listing {
   @@index([userId])
   @@index([type])
 }
+
+// Unmatched lookups are queued for catalog gap review (new promos, errors,
+// missing sets) rather than rejected (Spec §4.4 / §4.6).
+model CatalogGap {
+  id           String   @id @default(cuid())
+  game         String
+  query        String   // the code or search text that found nothing
+  kind         String   @default("CODE") // CODE | SEARCH | MANUAL
+  status       String   @default("OPEN") // OPEN | RESOLVED
+  reportedById String?
+  note         String?
+  createdAt    DateTime @default(now())
+
+  @@index([status])
+}
