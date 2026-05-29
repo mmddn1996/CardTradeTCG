@@ -1,0 +1,71 @@
+import type { Game } from "@/lib/enums";
+import { pricesFromNM } from "@/lib/pricing";
+import { SAMPLE_CARDS, type SampleCard } from "./sample-data";
+import type { CatalogCardResult, CatalogProvider, PriceResult } from "./types";
+
+/**
+ * Offline provider backed by the seeded sample dataset. Lets the whole app run
+ * without network access (Stage 1). Real providers replace this in Stage 2
+ * behind the identical CatalogProvider interface.
+ */
+export class MockProvider implements CatalogProvider {
+  readonly key = "MOCK";
+  readonly game: Game;
+  private cards: SampleCard[];
+
+  constructor(game: Game) {
+    this.game = game;
+    this.cards = SAMPLE_CARDS.filter((c) => c.game === game);
+  }
+
+  async lookupByCode(code: string): Promise<CatalogCardResult | null> {
+    const norm = code.trim().toLowerCase();
+    const hit = this.cards.find(
+      (c) =>
+        c.number.toLowerCase() === norm ||
+        c.externalId.toLowerCase() === norm,
+    );
+    return hit ? toResult(hit) : null;
+  }
+
+  async search(query: string): Promise<CatalogCardResult[]> {
+    const q = query.trim().toLowerCase();
+    if (!q) return this.cards.map(toResult);
+    return this.cards
+      .filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          c.number.toLowerCase().includes(q) ||
+          c.externalId.toLowerCase().includes(q),
+      )
+      .map(toResult);
+  }
+
+  async getPrice(externalId: string): Promise<PriceResult | null> {
+    const card = this.cards.find((c) => c.externalId === externalId);
+    if (!card) return null;
+    return {
+      byBand: pricesFromNM(card.valueAudNM),
+      source: this.key,
+      capturedAt: new Date(),
+    };
+  }
+}
+
+function toResult(c: SampleCard): CatalogCardResult {
+  return {
+    externalId: c.externalId,
+    game: c.game,
+    set: c.set,
+    number: c.number,
+    name: c.name,
+    variant: c.variant ?? null,
+    finish: c.finish ?? null,
+    imageUrl: c.imageUrl ?? null,
+  };
+}
+
+/** Provider registry — Stage 2 swaps Mock entries for real implementations. */
+export function getProvider(game: Game): CatalogProvider {
+  return new MockProvider(game);
+}

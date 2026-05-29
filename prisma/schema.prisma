@@ -1,0 +1,103 @@
+// CardSwap data model — foundation (Stage 1).
+// Dev uses SQLite; production target is Postgres (see docs/BUILD_PLAN.md).
+// SQLite has no native enums, so controlled vocabularies (condition bands,
+// trust tiers, listing types, inventory status) are stored as strings and
+// validated via Zod in src/lib/enums.ts. The model is unchanged on Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  displayName          String
+  email                String?  @unique
+  region               String   @default("AU")
+  trustTier            String   @default("BASIC") // BASIC | L1 | L2 | L3 | X1
+  kycStatus            String   @default("NONE")  // NONE | PENDING | VERIFIED
+  completedTradeValue  Float    @default(0)
+  ratingAvg            Float?
+  createdAt            DateTime @default(now())
+
+  inventory InventoryCard[]
+  listings  Listing[]
+}
+
+// Canonical card per game, seeded from set lists. Stable identity is
+// (game, set, number, variant, finish). Carries reference image(s).
+model CatalogCard {
+  id          String  @id @default(cuid())
+  game        String  // POKEMON | ONE_PIECE
+  set         String
+  number      String
+  name        String
+  variant     String? // e.g. alt-art, promo
+  finish      String? // e.g. normal | reverse-holo | foil
+  imageUrl    String?
+  externalId  String? // id in the source API/provider
+
+  prices    PriceSnapshot[]
+  inventory InventoryCard[]
+  listings  Listing[]
+
+  @@unique([game, set, number, variant, finish])
+  @@index([game, name])
+}
+
+// Cached market price for a (card, condition band) tuple, with freshness ts.
+model PriceSnapshot {
+  id            String   @id @default(cuid())
+  catalogCardId String
+  conditionBand String   // NM | LP | PL | PO
+  valueAud      Float
+  source        String   // provider key, e.g. MOCK | POKEMON_TCG_API
+  capturedAt    DateTime @default(now())
+
+  catalogCard CatalogCard @relation(fields: [catalogCardId], references: [id], onDelete: Cascade)
+
+  @@unique([catalogCardId, conditionBand, source])
+  @@index([catalogCardId])
+}
+
+// A digitised physical card owned by a user.
+model InventoryCard {
+  id            String   @id @default(cuid())
+  ownerId       String
+  catalogCardId String
+  condition     String   @default("NM") // NM | LP | PL | PO
+  status        String   @default("VAULT") // VAULT | LISTED | LOCKED
+  declaredValue Float?   // sentimental flag only; cannot exceed market (Spec §3.3)
+  photos        String   @default("[]") // JSON array of image refs
+  createdAt     DateTime @default(now())
+
+  owner       User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  catalogCard CatalogCard @relation(fields: [catalogCardId], references: [id])
+  listing     Listing?
+
+  @@index([ownerId])
+  @@index([catalogCardId])
+}
+
+// HAVE = available to trade (backed by an inventory card).
+// WANT = wishlist (backed by a catalog card).
+model Listing {
+  id              String   @id @default(cuid())
+  userId          String
+  type            String   // HAVE | WANT
+  inventoryCardId String?  @unique
+  catalogCardId   String?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventoryCard InventoryCard? @relation(fields: [inventoryCardId], references: [id], onDelete: Cascade)
+  catalogCard   CatalogCard?   @relation(fields: [catalogCardId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+}
