@@ -100,8 +100,8 @@ async function main() {
   await seedUser({
     displayName: "Ash K.",
     email: "ash@cardswap.dev",
-    trustTier: "L2",
-    completedTradeValueCents: 6000,
+    trustTier: "L3",
+    completedTradeValueCents: 8000,
     ratingAvg: 4.8,
     owns: {
       "base1-4": "NM", // Charizard
@@ -114,8 +114,8 @@ async function main() {
   await seedUser({
     displayName: "Misty W.",
     email: "misty@cardswap.dev",
-    trustTier: "L3",
-    completedTradeValueCents: 18000,
+    trustTier: "X1",
+    completedTradeValueCents: 20000,
     ratingAvg: 4.9,
     owns: {
       "base1-2": "NM", // Blastoise

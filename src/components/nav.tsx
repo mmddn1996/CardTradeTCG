@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/collection", label: "My Collection" },
   { href: "/add", label: "Add cards" },
   { href: "/marketplace", label: "Marketplace" },
+  { href: "/offers", label: "Offers" },
 ];
 
 export interface NavUser {
@@ -20,9 +21,11 @@ export interface NavUser {
 export function Nav({
   users,
   currentUserId,
+  incomingOffers = 0,
 }: {
   users: NavUser[];
   currentUserId: string;
+  incomingOffers?: number;
 }) {
   const pathname = usePathname();
 
@@ -47,6 +50,11 @@ export function Nav({
                 }`}
               >
                 {l.label}
+                {l.href === "/offers" && incomingOffers > 0 && (
+                  <span className="ml-1 rounded-full bg-accent-strong px-1.5 py-0.5 text-[10px] text-white">
+                    {incomingOffers}
+                  </span>
+                )}
               </Link>
             );
           })}

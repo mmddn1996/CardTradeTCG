@@ -29,6 +29,10 @@ export async function getAllUsers() {
   return prisma.user.findMany({ orderBy: { createdAt: "asc" } });
 }
 
+export async function getUserById(id: string) {
+  return prisma.user.findUnique({ where: { id } });
+}
+
 export interface CardValue {
   valueCents: number;
   source: string;

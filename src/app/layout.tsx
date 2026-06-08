@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { getAllUsers, getCurrentUser } from "@/lib/queries";
+import { countIncomingOffers } from "@/lib/offers";
 
 export const metadata: Metadata = {
   title: "CardSwap — card-for-card trading",
@@ -25,6 +26,7 @@ export default async function RootLayout({
     getAllUsers(),
     getCurrentUser(),
   ]);
+  const incomingOffers = await countIncomingOffers(currentUser.id);
 
   return (
     <html lang="en" className="h-full antialiased">
@@ -36,6 +38,7 @@ export default async function RootLayout({
             trustTier: u.trustTier,
           }))}
           currentUserId={currentUser.id}
+          incomingOffers={incomingOffers}
         />
         <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-6">
           {children}

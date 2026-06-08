@@ -26,6 +26,8 @@ model User {
 
   inventory InventoryCard[]
   listings  Listing[]
+  offersInitiated Offer[] @relation("OffersInitiated")
+  offersReceived  Offer[] @relation("OffersReceived")
 }
 
 // Canonical card per game, seeded from set lists. Stable identity is
@@ -78,6 +80,7 @@ model InventoryCard {
   owner       User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   catalogCard CatalogCard @relation(fields: [catalogCardId], references: [id])
   listing     Listing?
+  offerItems  OfferItem[]
 
   @@index([ownerId])
   @@index([catalogCardId])
@@ -100,6 +103,63 @@ model Listing {
 
   @@index([userId])
   @@index([type])
+}
+
+// A proposed exchange between two users (Spec §5). Each offer carries an
+// offered basket (initiator gives) and a requested basket (initiator wants).
+// Counter-offers are child offers linked via parentOfferId.
+model Offer {
+  id            String   @id @default(cuid())
+  state         String   @default("PENDING") // OfferState (Spec §5.2)
+  initiatorId   String
+  responderId   String
+  parentOfferId String?
+  // Basket totals (AUD cents) snapshotted when sent — the baseline for the
+  // volatility re-check at acceptance (Spec §5.5).
+  offeredValueCents   Int     @default(0)
+  requestedValueCents Int     @default(0)
+  message       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  initiator User        @relation("OffersInitiated", fields: [initiatorId], references: [id], onDelete: Cascade)
+  responder User        @relation("OffersReceived", fields: [responderId], references: [id], onDelete: Cascade)
+  parent    Offer?      @relation("OfferThread", fields: [parentOfferId], references: [id])
+  children  Offer[]     @relation("OfferThread")
+  items     OfferItem[]
+  trade     Trade?
+
+  @@index([initiatorId])
+  @@index([responderId])
+  @@index([state])
+}
+
+// A specific inventory card in one side of an offer's baskets.
+model OfferItem {
+  id              String @id @default(cuid())
+  offerId         String
+  side            String // OfferItemSide: OFFERED | REQUESTED
+  inventoryCardId String
+  valueCents      Int    @default(0) // snapshot when the offer/counter was sent
+
+  offer         Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  inventoryCard InventoryCard @relation(fields: [inventoryCardId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@index([inventoryCardId])
+}
+
+// Created when an offer is accepted (Spec §5.5). The frozen basket totals are
+// the source-of-truth audit record (Spec §3.3). Settlement (Spec §7) is Stage 5.
+model Trade {
+  id                  String   @id @default(cuid())
+  offerId             String   @unique
+  status              String   @default("CREATED") // TradeStatus
+  offeredValueCents   Int
+  requestedValueCents Int
+  createdAt           DateTime @default(now())
+
+  offer Offer @relation(fields: [offerId], references: [id])
 }
 
 // Unmatched lookups are queued for catalog gap review (new promos, errors,

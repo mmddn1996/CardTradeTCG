@@ -39,3 +39,30 @@ export type InventoryStatus = z.infer<typeof InventoryStatusSchema>;
 
 export const ListingTypeSchema = z.enum(["HAVE", "WANT"]);
 export type ListingType = z.infer<typeof ListingTypeSchema>;
+
+/** Offer lifecycle (Spec §5.2). */
+export const OfferStateSchema = z.enum([
+  "DRAFT",
+  "PENDING",
+  "COUNTERED",
+  "ACCEPTED",
+  "REJECTED",
+  "EXPIRED",
+  "CANCELLED",
+]);
+export type OfferState = z.infer<typeof OfferStateSchema>;
+
+/** Which basket an offer item belongs to. OFFERED = the initiator gives;
+ * REQUESTED = the initiator wants (drawn from the responder's cards). */
+export const OfferItemSideSchema = z.enum(["OFFERED", "REQUESTED"]);
+export type OfferItemSide = z.infer<typeof OfferItemSideSchema>;
+
+/** Settlement status of a created Trade. The full settlement state machine
+ * (Spec §7.3) arrives in Stage 5; Stage 3 only creates the Trade. */
+export const TradeStatusSchema = z.enum([
+  "CREATED",
+  "AWAITING_SETTLEMENT",
+  "DELIVERED",
+  "CANCELLED",
+]);
+export type TradeStatus = z.infer<typeof TradeStatusSchema>;
