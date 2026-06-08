@@ -25,7 +25,7 @@ export function ManualAddForm({
         <h3 className="font-medium">Add manually</h3>
         <p className="text-xs text-muted">
           No match found. Add the card by hand — it&apos;s filed for catalog review
-          and stays unpriced until a price source resolves it (Spec §4.6).
+          and stays unpriced until a price source resolves it.
         </p>
       </div>
 

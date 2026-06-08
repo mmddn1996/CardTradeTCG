@@ -52,8 +52,8 @@ export default async function OfferDetailPage({
 
       {offer.state === "ACCEPTED" && (
         <div className="rounded-xl border border-positive/40 bg-positive/10 p-4 text-sm">
-          ✓ Accepted — a Trade was created and both baskets are locked. Postage
-          settlement arrives in Stage 5.
+          ✓ Accepted — a trade was created and both baskets are now locked.
+          Postage &amp; settlement are coming soon.
         </div>
       )}
 
@@ -94,7 +94,7 @@ export default async function OfferDetailPage({
           {overpaying && (
             <p className="text-sm text-warning">
               Heads up: you&apos;d be giving more than 15% above what you receive.
-              You can still proceed — you&apos;ll just confirm on accept (Spec §5.5).
+              You can still proceed — you&apos;ll just confirm on accept.
             </p>
           )}
           <OfferActions offerId={offer.id} role={isResponder ? "responder" : "initiator"} />

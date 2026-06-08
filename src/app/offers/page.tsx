@@ -12,7 +12,13 @@ export default async function OffersPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Offers</h1>
+      <div>
+        <h1 className="text-2xl font-semibold">Offers</h1>
+        <p className="text-sm text-muted">
+          Your trades in progress — incoming proposals, offers you&apos;ve sent,
+          and past deals.
+        </p>
+      </div>
 
       <Section title="Incoming" empty="No offers awaiting your response.">
         {incoming.map((o) => (

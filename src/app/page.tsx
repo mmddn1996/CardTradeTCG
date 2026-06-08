@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CardTile } from "@/components/card-tile";
 import { formatAud } from "@/lib/pricing";
-import { GAME_LABEL } from "@/lib/enums";
 import {
   getCurrentUser,
   getDashboardStats,
@@ -40,11 +39,11 @@ export default async function DashboardPage() {
       </section>
 
       <section className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="font-medium">Games in MVP</h2>
+        <h2 className="font-medium">How it works</h2>
         <p className="text-sm text-muted mt-1">
-          {Object.values(GAME_LABEL).join(" · ")} — cards are traded only for
-          other cards. Market value is shown as a reference signal, never a
-          balance requirement.
+          Trade Pokémon and One Piece cards — only for other cards, never cash.
+          Market values help you compare, but never block a trade: if both sides
+          are happy, it&apos;s a deal.
         </p>
       </section>
 
@@ -96,7 +95,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function EmptyState() {
   return (
     <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted text-sm">
-      No cards yet. Adding cards by code lookup arrives in Stage 2.
+      No cards yet — head to “Add cards” to build your collection.
     </div>
   );
 }

@@ -13,7 +13,7 @@ export default async function CatalogGapsPage() {
         <h1 className="text-2xl font-semibold">Catalog gaps</h1>
         <p className="text-sm text-muted">
           Lookups that found no match — new promos, errors, or missing sets —
-          queued for review instead of rejected (Spec §4.4 / §4.6).
+          queued for review instead of rejected.
         </p>
       </div>
 

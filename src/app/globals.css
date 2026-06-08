@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b1020;
-  --surface: #141b2e;
-  --surface-2: #1c2540;
-  --border: #2a3454;
-  --foreground: #eef1f8;
-  --muted: #97a1c0;
-  --accent: #5b8cff;
-  --accent-strong: #3f6fff;
-  --positive: #3fcf8e;
+  --background: #0a0e1a;
+  --surface: #121829;
+  --surface-2: #1a2236;
+  --border: #242d44;
+  --foreground: #eaeefb;
+  --muted: #8b95b3;
+  --accent: #6f9bff;
+  --accent-strong: #4f7cff;
+  --positive: #43d39a;
   --warning: #ffb454;
   --danger: #ff6b6b;
 }
@@ -30,12 +30,55 @@
     Helvetica, Arial, sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  /* subtle depth behind the dark base */
+  background:
+    radial-gradient(1100px 520px at 12% -8%, rgba(79, 124, 255, 0.10), transparent 60%),
+    radial-gradient(900px 480px at 100% 0%, rgba(67, 211, 154, 0.06), transparent 55%),
+    var(--background);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 a {
   color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Consistent, subtle focus ring across interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 75%, transparent);
 }

@@ -93,7 +93,7 @@ export function AddResultForm({ card }: { card: CatalogCardResult }) {
           {pending ? "Adding…" : "Add to collection"}
         </button>
         <p className="text-[10px] text-muted">
-          Declared value above market is capped to market (Spec §3.3).
+          Declared value above market is capped to market.
         </p>
       </div>
     </form>

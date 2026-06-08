@@ -96,8 +96,8 @@ export default async function CardDetailPage({
               </tbody>
             </table>
             <div className="px-4 py-2 border-t border-border text-[11px] text-muted">
-              Source: {primarySource ?? "—"} · Reference data only — never gates a
-              trade (Spec §5.4).
+              Source: {primarySource ?? "—"} · Reference only — value never gates
+              a trade.
             </div>
           </div>
         </div>

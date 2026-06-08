@@ -98,8 +98,8 @@ export function OfferBuilder({
           />
           <span>
             You&apos;re giving ~{formatAud(offeredTotal)} and receiving ~
-            {formatAud(requestedTotal)} — more than 15% over. This is allowed;
-            just confirm you&apos;re happy to proceed (Spec §5.5).
+            {formatAud(requestedTotal)} — more than 15% over. That&apos;s allowed;
+            just confirm you&apos;re happy to proceed.
           </span>
         </label>
       )}

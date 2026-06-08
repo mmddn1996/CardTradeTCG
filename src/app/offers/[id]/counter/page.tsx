@@ -56,7 +56,7 @@ export default async function CounterPage({
         </h1>
         <p className="text-sm text-muted">
           Adjust either basket — add or remove cards, including pulling more of
-          their listed cards (Spec §5.3).
+          their listed cards.
         </p>
       </div>
       <OfferBuilder
