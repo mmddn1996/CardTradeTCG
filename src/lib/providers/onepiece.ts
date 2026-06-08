@@ -1,5 +1,5 @@
 import { fetchJson } from "./http";
-import type { CatalogCardResult, CatalogProvider } from "./types";
+import type { CatalogCardResult, CatalogProvider, SetInfo } from "./types";
 
 // Use www. directly — the bare host redirects, which can drop the x-api-key
 // header on the hop.
@@ -13,6 +13,9 @@ interface OpCard {
   set?: { name?: string } | string;
   images?: { large?: string; small?: string };
   image?: string;
+  ability?: string;
+  trigger?: string;
+  effect?: string;
 }
 
 /**
@@ -61,6 +64,17 @@ export class OnePieceProvider implements CatalogProvider {
     );
     return (Array.isArray(res?.data) ? res!.data! : []).map(toResult);
   }
+
+  async listSets(): Promise<SetInfo[]> {
+    const res = await fetchJson<{ data?: { id?: string; code?: string; name?: string }[] }>(
+      `${BASE}/sets`,
+      { headers: this.headers() },
+    );
+    const arr = Array.isArray(res?.data) ? res!.data! : [];
+    return arr
+      .map((s) => ({ code: s.code ?? s.id ?? "", name: s.name ?? s.code ?? s.id ?? "", game: "ONE_PIECE" as const }))
+      .filter((s) => s.code);
+  }
 }
 
 function pickFirst(data: OpCard[] | OpCard | undefined): OpCard | null {
@@ -70,6 +84,9 @@ function pickFirst(data: OpCard[] | OpCard | undefined): OpCard | null {
 
 function toResult(c: OpCard): CatalogCardResult {
   const set = typeof c.set === "string" ? c.set : c.set?.name;
+  const desc = [c.ability, c.effect, c.trigger && `[Trigger] ${c.trigger}`]
+    .filter(Boolean)
+    .join("\n");
   return {
     externalId: c.id ?? c.code ?? c.name,
     game: "ONE_PIECE",
@@ -79,5 +96,6 @@ function toResult(c: OpCard): CatalogCardResult {
     variant: null,
     finish: null,
     imageUrl: c.images?.large ?? c.images?.small ?? c.image ?? null,
+    description: desc || null,
   };
 }

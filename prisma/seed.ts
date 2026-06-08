@@ -25,6 +25,7 @@ async function main() {
           variant: c.variant ?? null,
           finish: c.finish ?? null,
           imageUrl: c.imageUrl ?? null,
+          description: c.description ?? null,
         },
       }));
 

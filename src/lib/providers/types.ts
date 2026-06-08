@@ -18,6 +18,15 @@ export interface CatalogCardResult {
   variant?: string | null;
   finish?: string | null;
   imageUrl?: string | null;
+  /** Rules / ability / effect text (Spec §4.4 catalog data). */
+  description?: string | null;
+}
+
+/** A set/expansion the user can browse (Spec §4.4). */
+export interface SetInfo {
+  code: string; // stable id used by lookupBySet, e.g. "base1", "OP13"
+  name: string; // display name, e.g. "Base Set", "OP13 The Three Brothers"
+  game: Game;
 }
 
 export interface CatalogProvider {
@@ -32,6 +41,9 @@ export interface CatalogProvider {
 
   /** Return every card in a set/expansion (e.g. "OP12", "base1"). */
   lookupBySet(setCode: string): Promise<CatalogCardResult[]>;
+
+  /** List the browsable sets for this game (most recent first). */
+  listSets(): Promise<SetInfo[]>;
 }
 
 /** Identity needed to price a card across sources. */

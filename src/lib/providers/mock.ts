@@ -7,7 +7,13 @@ import type {
   PriceRef,
   PriceResult,
   PricingProvider,
+  SetInfo,
 } from "./types";
+
+/** Derive a set code from a sample card's id ("base1-4"→"base1", "OP13-001"→"OP13"). */
+function setCodeOf(externalId: string): string {
+  return externalId.split("-")[0];
+}
 
 /**
  * Offline provider backed by the seeded sample dataset. Implements *both* the
@@ -57,6 +63,15 @@ export class MockProvider implements CatalogProvider, PricingProvider {
       .map(toResult);
   }
 
+  async listSets(): Promise<SetInfo[]> {
+    const seen = new Map<string, SetInfo>();
+    for (const c of this.cards) {
+      const code = setCodeOf(c.externalId);
+      if (!seen.has(code)) seen.set(code, { code, name: c.set, game: this.game });
+    }
+    return [...seen.values()];
+  }
+
   async getPrice(ref: PriceRef): Promise<PriceResult | null> {
     const card = this.cards.find((c) => c.externalId === ref.externalId);
     if (!card) return null;
@@ -78,5 +93,6 @@ function toResult(c: SampleCard): CatalogCardResult {
     variant: c.variant ?? null,
     finish: c.finish ?? null,
     imageUrl: c.imageUrl ?? null,
+    description: c.description ?? null,
   };
 }

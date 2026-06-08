@@ -37,6 +37,7 @@ const AddSchema = z.object({
   variant: z.string().optional(),
   finish: z.string().optional(),
   imageUrl: z.string().optional(),
+  description: z.string().optional(),
   condition: ConditionBandSchema,
   declaredValue: numberish,
   list: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
@@ -62,6 +63,7 @@ export async function addCardAction(
     variant: d.variant || null,
     finish: d.finish || null,
     imageUrl: d.imageUrl || null,
+    description: d.description || null,
   });
 
   const { prices } = await ensurePricing(card);

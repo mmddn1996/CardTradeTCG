@@ -1,5 +1,5 @@
 import { fetchJson } from "./http";
-import type { CatalogCardResult, CatalogProvider } from "./types";
+import type { CatalogCardResult, CatalogProvider, SetInfo } from "./types";
 
 const BASE = process.env.POKEMON_TCG_API_BASE ?? "https://api.pokemontcg.io/v2";
 
@@ -10,6 +10,10 @@ interface PokeCard {
   set?: { id: string; name: string };
   images?: { small?: string; large?: string };
   tcgplayer?: { prices?: Record<string, unknown> };
+  flavorText?: string;
+  rules?: string[];
+  abilities?: { name: string; text: string }[];
+  attacks?: { name: string; damage?: string; text?: string }[];
 }
 
 /**
@@ -68,6 +72,18 @@ export class PokemonTcgProvider implements CatalogProvider {
     );
     return (list?.data ?? []).map(toResult);
   }
+
+  async listSets(): Promise<SetInfo[]> {
+    const res = await fetchJson<{ data: { id: string; name: string }[] }>(
+      `${BASE}/sets?orderBy=-releaseDate&pageSize=100`,
+      { headers: this.headers() },
+    );
+    return (res?.data ?? []).map((s) => ({
+      code: s.id,
+      name: s.name,
+      game: "POKEMON" as const,
+    }));
+  }
 }
 
 function toResult(c: PokeCard): CatalogCardResult {
@@ -86,5 +102,19 @@ function toResult(c: PokeCard): CatalogCardResult {
     variant: null,
     finish,
     imageUrl: c.images?.large ?? c.images?.small ?? null,
+    description: describe(c),
   };
+}
+
+/** Build readable rules text from abilities, attacks, rule boxes and flavour. */
+function describe(c: PokeCard): string | null {
+  const parts: string[] = [];
+  for (const a of c.abilities ?? []) parts.push(`${a.name}: ${a.text}`);
+  for (const a of c.attacks ?? []) {
+    const dmg = a.damage ? ` (${a.damage})` : "";
+    parts.push(`${a.name}${dmg}${a.text ? `: ${a.text}` : ""}`);
+  }
+  for (const r of c.rules ?? []) parts.push(r);
+  if (parts.length === 0 && c.flavorText) parts.push(c.flavorText);
+  return parts.length ? parts.join("\n") : null;
 }

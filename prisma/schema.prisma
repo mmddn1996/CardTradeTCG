@@ -41,6 +41,7 @@ model CatalogCard {
   variant     String? // e.g. alt-art, promo
   finish      String? // e.g. normal | reverse-holo | foil
   imageUrl    String?
+  description String? // rules / ability / effect text from the source
   externalId  String? // id in the source API/provider
 
   prices    PriceSnapshot[]

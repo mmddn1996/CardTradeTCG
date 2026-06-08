@@ -56,6 +56,15 @@ export default async function CardDetailPage({
             )}
           </div>
 
+          {card.description && (
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <h2 className="text-sm font-medium mb-1.5">Card text</h2>
+              <p className="text-sm text-muted whitespace-pre-line leading-relaxed">
+                {card.description}
+              </p>
+            </div>
+          )}
+
           <div className="rounded-xl border border-border bg-surface overflow-hidden">
             <div className="px-4 py-2 border-b border-border text-sm font-medium">
               Market value by condition

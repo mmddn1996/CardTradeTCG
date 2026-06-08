@@ -11,6 +11,7 @@ export type {
   PricingProvider,
   PriceRef,
   PriceResult,
+  SetInfo,
 } from "./types";
 
 function live(): boolean {

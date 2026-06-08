@@ -6,6 +6,7 @@ import {
   getCatalogProvider,
   getPricingProvider,
   type CatalogCardResult,
+  type SetInfo,
 } from "@/lib/providers";
 import { isStale, type BandPrices } from "@/lib/value-rules";
 
@@ -64,8 +65,22 @@ export async function findOrCreateCatalogCard(result: CatalogCardResult) {
       variant: result.variant ?? null,
       finish: result.finish ?? null,
       imageUrl: result.imageUrl ?? null,
+      description: result.description ?? null,
     },
   });
+}
+
+/** Browsable sets for a game (Spec §4.4). */
+export async function listSets(game: Game): Promise<SetInfo[]> {
+  return getCatalogProvider(game).listSets();
+}
+
+/** Every card in a set/expansion. */
+export async function cardsInSet(
+  game: Game,
+  setCode: string,
+): Promise<CatalogCardResult[]> {
+  return getCatalogProvider(game).lookupBySet(setCode);
 }
 
 async function readBandPrices(

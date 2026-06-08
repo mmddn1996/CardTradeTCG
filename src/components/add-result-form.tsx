@@ -46,6 +46,7 @@ export function AddResultForm({ card }: { card: CatalogCardResult }) {
         <input type="hidden" name="variant" value={card.variant ?? ""} />
         <input type="hidden" name="finish" value={card.finish ?? ""} />
         <input type="hidden" name="imageUrl" value={card.imageUrl ?? ""} />
+        <input type="hidden" name="description" value={card.description ?? ""} />
 
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs text-muted">
