@@ -41,7 +41,7 @@ export class OnePieceProvider implements CatalogProvider {
 
   async search(query: string): Promise<CatalogCardResult[]> {
     const res = await fetchJson<{ data?: OpCard[] }>(
-      `${BASE}/cards?name=${encodeURIComponent(query.trim())}`,
+      `${BASE}/cards?name=${encodeURIComponent(query.trim())}&limit=20`,
       { headers: this.headers() },
     );
     const arr = Array.isArray(res?.data) ? res!.data! : [];
@@ -49,7 +49,9 @@ export class OnePieceProvider implements CatalogProvider {
   }
 
   async getPrice(): Promise<PriceResult | null> {
-    // No supported AUD price feed for One Piece yet (see class doc).
+    // apitcg.com serves card data + images but no AUD market price, so One Piece
+    // cards stay "unpriced" (Spec §4.6) — they can't be added to an offer until
+    // a One Piece price source is plugged in behind this same interface.
     return null;
   }
 }

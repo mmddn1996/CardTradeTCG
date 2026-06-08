@@ -51,8 +51,16 @@ export class PokemonTcgProvider implements CatalogProvider {
   }
 
   async search(query: string): Promise<CatalogCardResult[]> {
+    // AND a wildcard clause per word so multi-word names match (the API treats
+    // whitespace as AND); quotes around wildcards break matching, so avoid them.
+    const clause = query
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((t) => `name:*${t}*`)
+      .join(" ");
     const list = await fetchJson<{ data: PokeCard[] }>(
-      `${BASE}/cards?q=${encodeURIComponent(`name:"*${query}*"`)}&pageSize=20`,
+      `${BASE}/cards?q=${encodeURIComponent(clause)}&pageSize=20&orderBy=-set.releaseDate`,
       { headers: this.headers() },
     );
     return (list?.data ?? []).map(toResult);
