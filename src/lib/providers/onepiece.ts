@@ -1,8 +1,10 @@
 import { fetchJson } from "./http";
 import type { CatalogCardResult, CatalogProvider } from "./types";
 
+// Use www. directly — the bare host redirects, which can drop the x-api-key
+// header on the hop.
 const BASE =
-  process.env.ONEPIECE_API_BASE ?? "https://apitcg.com/api/one-piece";
+  process.env.ONEPIECE_API_BASE ?? "https://www.apitcg.com/api/one-piece";
 
 interface OpCard {
   id: string; // e.g. OP01-001

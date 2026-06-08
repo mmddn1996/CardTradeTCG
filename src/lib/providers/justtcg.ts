@@ -6,15 +6,18 @@ import type { PriceRef, PriceResult, PricingProvider } from "./types";
 
 const BASE = process.env.JUSTTCG_API_BASE ?? "https://api.justtcg.com/v1";
 
+// JustTCG game slugs (One Piece confirmed; Pokémon overridable via env).
 const GAME_SLUG: Record<Game, string> = {
-  POKEMON: "pokemon",
-  ONE_PIECE: "one-piece",
+  POKEMON: process.env.JUSTTCG_SLUG_POKEMON ?? "pokemon",
+  ONE_PIECE: process.env.JUSTTCG_SLUG_ONE_PIECE ?? "one-piece-card-game",
 };
 
 interface JtVariant {
   condition?: string;
   printing?: string;
+  language?: string;
   price?: number; // USD
+  avgPrice?: number;
 }
 interface JtCard {
   id?: string;
@@ -76,23 +79,33 @@ function bestMatch(cards: JtCard[], ref: PriceRef): JtCard | undefined {
   return byNumber ?? cards[0];
 }
 
-/** Collapse JustTCG's per-condition variants into our four bands (AUD cents). */
+/** Collapse JustTCG's per-condition variants into our four bands (AUD cents).
+ * Prefer English variants (avoid pricing off a Japanese printing), then prefer
+ * the printing matching the catalog finish (e.g. Holofoil). Uses `price`, or
+ * `avgPrice` as a fallback. */
 function bandsFromVariants(
   variants: JtVariant[],
   finish?: string | null,
 ): Partial<Record<ConditionBand, number>> {
   const out: Partial<Record<ConditionBand, number>> = {};
-  // Prefer variants whose printing matches the catalog finish (e.g. Holofoil).
+
+  const english = variants.filter(
+    (v) => !v.language || /eng/i.test(v.language),
+  );
+  const pool = english.length > 0 ? english : variants;
+
   const preferred = finish
-    ? variants.filter((v) =>
+    ? pool.filter((v) =>
         (v.printing ?? "").toLowerCase().includes(finish.toLowerCase()),
       )
     : [];
-  for (const list of [preferred, variants]) {
+
+  for (const list of [preferred, pool]) {
     for (const v of list) {
       const band = bandOf(v.condition);
-      if (band && out[band] == null && typeof v.price === "number" && v.price > 0) {
-        out[band] = usdToAudCents(v.price);
+      const usd = typeof v.price === "number" ? v.price : v.avgPrice;
+      if (band && out[band] == null && typeof usd === "number" && usd > 0) {
+        out[band] = usdToAudCents(usd);
       }
     }
   }
