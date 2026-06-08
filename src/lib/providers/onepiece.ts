@@ -32,12 +32,17 @@ export class OnePieceProvider implements CatalogProvider {
   }
 
   async lookupByCode(code: string): Promise<CatalogCardResult | null> {
-    const res = await fetchJson<{ data?: OpCard[] | OpCard }>(
-      `${BASE}/cards?id=${encodeURIComponent(code.trim())}`,
-      { headers: this.headers() },
-    );
-    const card = pickFirst(res?.data);
-    return card ? toResult(card) : null;
+    const q = code.trim();
+    // Try the exact id first, then the card code, before giving up.
+    for (const param of ["id", "code"]) {
+      const res = await fetchJson<{ data?: OpCard[] | OpCard }>(
+        `${BASE}/cards?${param}=${encodeURIComponent(q)}`,
+        { headers: this.headers() },
+      );
+      const card = pickFirst(res?.data);
+      if (card) return toResult(card);
+    }
+    return null;
   }
 
   async search(query: string): Promise<CatalogCardResult[]> {

@@ -53,14 +53,18 @@ function validateBasket(
   cards: CardWithValue[],
   expectedOwnerId: string,
   ids: string[],
-  opts: { requireListed: boolean },
+  opts: { requireListed: boolean; allowedExtraIds?: Set<string> },
 ): string | null {
   if (cards.length !== ids.length) return "Some cards no longer exist.";
   for (const c of cards) {
     if (c.ownerId !== expectedOwnerId)
       return "A card is no longer owned by the expected user.";
     if (c.status === "LOCKED") return "A card is locked in another trade.";
-    if (opts.requireListed && c.status !== "LISTED")
+    if (
+      opts.requireListed &&
+      c.status !== "LISTED" &&
+      !opts.allowedExtraIds?.has(c.id)
+    )
       return "A requested card is no longer listed for trade.";
     if (c.valueCents == null)
       return "An unpriced card can't be part of an offer (Spec §4.6).";
@@ -89,6 +93,19 @@ export async function createOffer(input: {
   if (input.offeredCardIds.length === 0 || input.requestedCardIds.length === 0)
     return { ok: false, error: "Both sides of the trade need at least one card." };
 
+  // For a counter-offer, cards already on the table in the parent negotiation
+  // are requestable even if not separately listed (Spec §5.3).
+  let parentCardIds: Set<string> | undefined;
+  if (input.parentOfferId) {
+    const parent = await prisma.offer.findUnique({
+      where: { id: input.parentOfferId },
+      include: { items: { select: { inventoryCardId: true } } },
+    });
+    if (!parent || parent.state !== "PENDING")
+      return { ok: false, error: "This negotiation is no longer open." };
+    parentCardIds = new Set(parent.items.map((i) => i.inventoryCardId));
+  }
+
   const offered = await loadCards(input.offeredCardIds);
   const requested = await loadCards(input.requestedCardIds);
 
@@ -98,6 +115,7 @@ export async function createOffer(input: {
   if (offErr) return { ok: false, error: offErr };
   const reqErr = validateBasket(requested, responderId, input.requestedCardIds, {
     requireListed: true,
+    allowedExtraIds: parentCardIds,
   });
   if (reqErr) return { ok: false, error: reqErr };
 
@@ -116,14 +134,6 @@ export async function createOffer(input: {
         requestedValue / 100
       ).toFixed(0)}. Continue anyway?`,
     };
-  }
-
-  if (input.parentOfferId) {
-    const parent = await prisma.offer.findUnique({
-      where: { id: input.parentOfferId },
-    });
-    if (!parent || parent.state !== "PENDING")
-      return { ok: false, error: "This negotiation is no longer open." };
   }
 
   const offer = await prisma.$transaction(async (tx) => {
@@ -189,13 +199,14 @@ export async function acceptOffer(input: {
   const offered = await loadCards(offeredIds);
   const requested = await loadCards(requestedIds);
 
-  // Re-validate ownership / availability / pricing at acceptance.
+  // Re-validate ownership / availability / pricing at acceptance. Listing is
+  // not required here — the cards are already committed to this offer.
   const offErr = validateBasket(offered, offer.initiatorId, offeredIds, {
     requireListed: false,
   });
   if (offErr) return { ok: false, error: offErr };
   const reqErr = validateBasket(requested, offer.responderId, requestedIds, {
-    requireListed: true,
+    requireListed: false,
   });
   if (reqErr) return { ok: false, error: reqErr };
 

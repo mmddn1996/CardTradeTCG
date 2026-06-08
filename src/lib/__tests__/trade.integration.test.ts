@@ -68,6 +68,7 @@ beforeAll(async () => {
   ids.b = b.id;
   const lo = await priced(LO, 1000);
   const hi = await priced(HI, 5000);
+  ids.loCatalog = lo.id;
   ids.aLo1 = await inv(a.id, lo.id);
   ids.aLo2 = await inv(a.id, lo.id);
   ids.aHi = await inv(a.id, hi.id);
@@ -136,6 +137,31 @@ describe("acceptOffer two-phase commit + locking (Spec §5.6)", () => {
     const o2 = await prisma.offer.findUnique({ where: { id: offer2.offerId } });
     expect(o1?.state).toBe("ACCEPTED");
     expect(o2?.state).toBe("REJECTED"); // conflicting offer auto-reverted
+  });
+
+  it("lets a counter request the other party's VAULT card already on the table", async () => {
+    // A offers a VAULT card (not listed) for B's listed card.
+    const vault = await prisma.inventoryCard.create({
+      data: { ownerId: ids.a, catalogCardId: ids.loCatalog, condition: "NM", status: "VAULT" },
+    });
+    const original = await createOffer({
+      initiatorId: ids.a,
+      responderId: ids.b,
+      offeredCardIds: [vault.id],
+      requestedCardIds: [ids.bLo2],
+    });
+    expect(original.ok).toBe(true);
+    if (!original.ok) return;
+
+    // B counters, requesting A's VAULT card (which is on the table, not listed).
+    const counter = await createOffer({
+      initiatorId: ids.b,
+      responderId: ids.a,
+      offeredCardIds: [ids.bLo2],
+      requestedCardIds: [vault.id],
+      parentOfferId: original.offerId,
+    });
+    expect(counter.ok).toBe(true); // previously failed: "no longer listed"
   });
 
   it("won't let the initiator accept their own offer", async () => {

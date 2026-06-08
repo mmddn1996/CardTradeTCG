@@ -7,7 +7,7 @@ import {
   ConditionBandSchema,
   type ConditionBand,
 } from "@/lib/enums";
-import { CONDITION_MULTIPLIER, formatAud } from "@/lib/pricing";
+import { formatAud } from "@/lib/pricing";
 import { getCatalogCard } from "@/lib/queries";
 
 const BAND_ORDER: ConditionBand[] = ["NM", "LP", "PL", "PO"];
@@ -21,9 +21,12 @@ export default async function CardDetailPage({
   const card = await getCatalogCard(id);
   if (!card) notFound();
 
-  // Latest snapshot per condition band.
+  // Show one source's prices (the most recent), so we never mix a market feed's
+  // real per-condition values with the mock's derived ones.
+  const primarySource = card.prices[0]?.source ?? null;
   const latestByBand = new Map<string, (typeof card.prices)[number]>();
   for (const p of card.prices) {
+    if (p.source !== primarySource) continue;
     if (!latestByBand.has(p.conditionBand)) latestByBand.set(p.conditionBand, p);
   }
 
@@ -61,8 +64,7 @@ export default async function CardDetailPage({
               <thead className="text-muted text-left">
                 <tr>
                   <th className="px-4 py-2 font-normal">Condition</th>
-                  <th className="px-4 py-2 font-normal">×</th>
-                  <th className="px-4 py-2 font-normal text-right">Value (AUD)</th>
+                  <th className="px-4 py-2 font-normal text-right">Market value</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,9 +78,6 @@ export default async function CardDetailPage({
                           {CONDITION_LABEL[band]}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-muted">
-                        {CONDITION_MULTIPLIER[band].toFixed(2)}
-                      </td>
                       <td className="px-4 py-2 text-right font-medium">
                         {snap ? formatAud(snap.valueCents) : "—"}
                       </td>
@@ -88,9 +87,8 @@ export default async function CardDetailPage({
               </tbody>
             </table>
             <div className="px-4 py-2 border-t border-border text-[11px] text-muted">
-              Source:{" "}
-              {card.prices[0]?.source ?? "—"} · Pricing is reference data only and
-              never gates a trade (Spec §5.4).
+              Source: {primarySource ?? "—"} · Reference data only — never gates a
+              trade (Spec §5.4).
             </div>
           </div>
         </div>
