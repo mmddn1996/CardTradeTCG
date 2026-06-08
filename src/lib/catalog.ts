@@ -58,7 +58,7 @@ async function readBandPrices(
   const out: BandPrices = {};
   for (const s of snaps) {
     const band = s.conditionBand as ConditionBand;
-    if (out[band] == null) out[band] = s.valueAud;
+    if (out[band] == null) out[band] = s.valueCents;
   }
   return out;
 }
@@ -94,8 +94,8 @@ export async function ensurePricing(
 
   const now = new Date();
   for (const band of ConditionBandSchema.options) {
-    const valueAud = fresh.byBand[band];
-    if (valueAud == null) continue;
+    const valueCents = fresh.byBand[band];
+    if (valueCents == null) continue;
     await prisma.priceSnapshot.upsert({
       where: {
         catalogCardId_conditionBand_source: {
@@ -104,8 +104,8 @@ export async function ensurePricing(
           source: fresh.source,
         },
       },
-      update: { valueAud, capturedAt: now },
-      create: { catalogCardId, conditionBand: band, valueAud, source: fresh.source },
+      update: { valueCents, capturedAt: now },
+      create: { catalogCardId, conditionBand: band, valueCents, source: fresh.source },
     });
   }
   return { prices: fresh.byBand, source: fresh.source };

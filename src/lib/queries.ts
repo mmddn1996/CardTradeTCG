@@ -14,7 +14,7 @@ export async function getCurrentUser() {
 }
 
 export interface CardValue {
-  valueAud: number;
+  valueCents: number;
   source: string;
   capturedAt: Date;
 }
@@ -29,7 +29,7 @@ export async function getCardValue(
     orderBy: { capturedAt: "desc" },
   });
   return snap
-    ? { valueAud: snap.valueAud, source: snap.source, capturedAt: snap.capturedAt }
+    ? { valueCents: snap.valueCents, source: snap.source, capturedAt: snap.capturedAt }
     : null;
 }
 
@@ -88,14 +88,14 @@ export async function getCatalogGaps() {
 
 export async function getDashboardStats(userId: string) {
   const inventory = await getInventoryForUser(userId);
-  const collectionValue = inventory.reduce(
-    (sum, i) => sum + (i.value?.valueAud ?? 0),
+  const collectionValueCents = inventory.reduce(
+    (sum, i) => sum + (i.value?.valueCents ?? 0),
     0,
   );
   return {
     cardCount: inventory.length,
     listedCount: inventory.filter((i) => i.status === "LISTED").length,
-    collectionValue,
+    collectionValueCents,
     catalogSize: await prisma.catalogCard.count(),
   };
 }

@@ -1,6 +1,12 @@
 import type { ConditionBand } from "@/lib/enums";
 
 /**
+ * Money is handled in **integer AUD cents** everywhere (DB, providers, engine)
+ * to keep the trade engine's value-delta and threshold maths exact — floating
+ * dollars are only ever produced for display via formatAud().
+ */
+
+/**
  * Condition-band price multipliers vs Near-Mint (Spec §3.2). Condition
  * materially moves price, so each band maps to its own price point.
  */
@@ -11,26 +17,31 @@ export const CONDITION_MULTIPLIER: Record<ConditionBand, number> = {
   PO: 0.35,
 };
 
-/** Derive every band's AUD price from a Near-Mint base price. */
+/** Derive every band's price (cents) from a Near-Mint base price (cents). */
 export function pricesFromNM(
-  valueAudNM: number,
+  valueNmCents: number,
 ): Record<ConditionBand, number> {
   return {
-    NM: round2(valueAudNM * CONDITION_MULTIPLIER.NM),
-    LP: round2(valueAudNM * CONDITION_MULTIPLIER.LP),
-    PL: round2(valueAudNM * CONDITION_MULTIPLIER.PL),
-    PO: round2(valueAudNM * CONDITION_MULTIPLIER.PO),
+    NM: Math.round(valueNmCents * CONDITION_MULTIPLIER.NM),
+    LP: Math.round(valueNmCents * CONDITION_MULTIPLIER.LP),
+    PL: Math.round(valueNmCents * CONDITION_MULTIPLIER.PL),
+    PO: Math.round(valueNmCents * CONDITION_MULTIPLIER.PO),
   };
 }
 
-export function formatAud(value: number): string {
+export function dollarsToCents(dollars: number): number {
+  return Math.round(dollars * 100);
+}
+
+export function centsToDollars(cents: number): number {
+  return cents / 100;
+}
+
+/** Format integer AUD cents as a currency string. */
+export function formatAud(cents: number): string {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
     maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+  }).format(cents / 100);
 }

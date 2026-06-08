@@ -1,5 +1,5 @@
 import { pricesFromNM } from "@/lib/pricing";
-import { eurToAud, usdToAud } from "./fx";
+import { eurToAudCents, usdToAudCents } from "./fx";
 import { fetchJson } from "./http";
 import type { CatalogCardResult, CatalogProvider, PriceResult } from "./types";
 
@@ -73,9 +73,13 @@ export class PokemonTcgProvider implements CatalogProvider {
     );
     const card = res?.data;
     if (!card) return null;
-    const nm = nmPriceAud(card);
-    if (nm == null) return null;
-    return { byBand: pricesFromNM(nm), source: this.key, capturedAt: new Date() };
+    const nmCents = nmPriceAudCents(card);
+    if (nmCents == null) return null;
+    return {
+      byBand: pricesFromNM(nmCents),
+      source: this.key,
+      capturedAt: new Date(),
+    };
   }
 }
 
@@ -98,22 +102,22 @@ function toResult(c: PokeCard): CatalogCardResult {
   };
 }
 
-/** Best Near-Mint AUD price: prefer TCGplayer market (USD), fall back to
- * Cardmarket trend (EUR). */
-function nmPriceAud(c: PokeCard): number | null {
+/** Best Near-Mint price in AUD cents: prefer TCGplayer market (USD), fall back
+ * to Cardmarket trend (EUR). */
+function nmPriceAudCents(c: PokeCard): number | null {
   const tcg = c.tcgplayer?.prices;
   if (tcg) {
     const order = ["holofoil", "normal", "reverseHolofoil"];
     for (const k of order) {
       const p = tcg[k]?.market ?? tcg[k]?.mid;
-      if (p != null && p > 0) return usdToAud(p);
+      if (p != null && p > 0) return usdToAudCents(p);
     }
     for (const k of Object.keys(tcg)) {
       const p = tcg[k]?.market ?? tcg[k]?.mid;
-      if (p != null && p > 0) return usdToAud(p);
+      if (p != null && p > 0) return usdToAudCents(p);
     }
   }
   const cm = c.cardmarket?.prices?.trendPrice ?? c.cardmarket?.prices?.averageSellPrice;
-  if (cm != null && cm > 0) return eurToAud(cm);
+  if (cm != null && cm > 0) return eurToAudCents(cm);
   return null;
 }

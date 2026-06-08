@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Cards owned" value={String(stats.cardCount)} />
         <Stat label="Listed to trade" value={String(stats.listedCount)} />
-        <Stat label="Collection value" value={formatAud(stats.collectionValue)} />
+        <Stat label="Collection value" value={formatAud(stats.collectionValueCents)} />
         <Stat label="Catalog size" value={String(stats.catalogSize)} />
       </section>
 

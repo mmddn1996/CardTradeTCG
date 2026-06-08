@@ -80,7 +80,7 @@ export default async function CardDetailPage({
                         {CONDITION_MULTIPLIER[band].toFixed(2)}
                       </td>
                       <td className="px-4 py-2 text-right font-medium">
-                        {snap ? formatAud(snap.valueAud) : "—"}
+                        {snap ? formatAud(snap.valueCents) : "—"}
                       </td>
                     </tr>
                   );

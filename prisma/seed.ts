@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { pricesFromNM } from "../src/lib/pricing";
+import { dollarsToCents, pricesFromNM } from "../src/lib/pricing";
 import { SAMPLE_CARDS } from "../src/lib/providers/sample-data";
 
 const prisma = new PrismaClient();
@@ -28,8 +28,8 @@ async function main() {
         },
       }));
 
-    const prices = pricesFromNM(c.valueAudNM);
-    for (const [band, valueAud] of Object.entries(prices)) {
+    const prices = pricesFromNM(dollarsToCents(c.valueAudNM));
+    for (const [band, valueCents] of Object.entries(prices)) {
       await prisma.priceSnapshot.upsert({
         where: {
           catalogCardId_conditionBand_source: {
@@ -38,11 +38,11 @@ async function main() {
             source: "MOCK",
           },
         },
-        update: { valueAud, capturedAt: new Date() },
+        update: { valueCents, capturedAt: new Date() },
         create: {
           catalogCardId: card.id,
           conditionBand: band,
-          valueAud,
+          valueCents,
           source: "MOCK",
         },
       });
@@ -59,7 +59,7 @@ async function main() {
       region: "AU",
       trustTier: "L2",
       kycStatus: "VERIFIED",
-      completedTradeValue: 60,
+      completedTradeValueCents: 6000,
       ratingAvg: 4.8,
     },
   });

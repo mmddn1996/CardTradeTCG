@@ -16,6 +16,7 @@ import {
   recordCatalogGap,
 } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/queries";
+import { dollarsToCents } from "@/lib/pricing";
 import { clampDeclaredValue } from "@/lib/value-rules";
 
 export interface AddState {
@@ -64,8 +65,10 @@ export async function addCardAction(
   });
 
   const { prices } = await ensurePricing(card.id, d.externalId, d.game);
-  const marketValue = prices?.[d.condition as ConditionBand] ?? null;
-  const declared = clampDeclaredValue(d.declaredValue, marketValue);
+  const marketCents = prices?.[d.condition as ConditionBand] ?? null;
+  const declaredCents =
+    d.declaredValue != null ? dollarsToCents(d.declaredValue) : null;
+  const declared = clampDeclaredValue(declaredCents, marketCents);
 
   const inv = await prisma.inventoryCard.create({
     data: {
@@ -73,7 +76,7 @@ export async function addCardAction(
       catalogCardId: card.id,
       condition: d.condition,
       status: d.list ? "LISTED" : "VAULT",
-      declaredValue: declared.value,
+      declaredValueCents: declared.value,
     },
   });
 

@@ -25,7 +25,7 @@ export function ValueBadge({
   return (
     <span className="inline-flex flex-col">
       <span className={big ? "text-lg font-semibold" : "text-sm font-semibold"}>
-        {formatAud(value.valueAud)}
+        {formatAud(value.valueCents)}
       </span>
       <span className="text-[10px] text-muted">
         {value.source} · as of {timeAgo(value.capturedAt)}

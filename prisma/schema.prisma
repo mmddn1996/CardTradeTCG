@@ -18,10 +18,10 @@ model User {
   displayName          String
   email                String?  @unique
   region               String   @default("AU")
-  trustTier            String   @default("BASIC") // BASIC | L1 | L2 | L3 | X1
-  kycStatus            String   @default("NONE")  // NONE | PENDING | VERIFIED
-  completedTradeValue  Float    @default(0)
-  ratingAvg            Float?
+  trustTier               String @default("BASIC") // BASIC | L1 | L2 | L3 | X1
+  kycStatus               String @default("NONE")  // NONE | PENDING | VERIFIED
+  completedTradeValueCents Int   @default(0)
+  ratingAvg               Float?
   createdAt            DateTime @default(now())
 
   inventory InventoryCard[]
@@ -54,7 +54,7 @@ model PriceSnapshot {
   id            String   @id @default(cuid())
   catalogCardId String
   conditionBand String   // NM | LP | PL | PO
-  valueAud      Float
+  valueCents    Int
   source        String   // provider key, e.g. MOCK | POKEMON_TCG_API
   capturedAt    DateTime @default(now())
 
@@ -71,7 +71,7 @@ model InventoryCard {
   catalogCardId String
   condition     String   @default("NM") // NM | LP | PL | PO
   status        String   @default("VAULT") // VAULT | LISTED | LOCKED
-  declaredValue Float?   // sentimental flag only; cannot exceed market (Spec §3.3)
+  declaredValueCents Int? // sentimental flag only; cannot exceed market (Spec §3.3)
   photos        String   @default("[]") // JSON array of image refs
   createdAt     DateTime @default(now())
 

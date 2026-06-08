@@ -1,5 +1,5 @@
 import type { Game } from "@/lib/enums";
-import { pricesFromNM } from "@/lib/pricing";
+import { dollarsToCents, pricesFromNM } from "@/lib/pricing";
 import { SAMPLE_CARDS, type SampleCard } from "./sample-data";
 import type { CatalogCardResult, CatalogProvider, PriceResult } from "./types";
 
@@ -45,7 +45,7 @@ export class MockProvider implements CatalogProvider {
     const card = this.cards.find((c) => c.externalId === externalId);
     if (!card) return null;
     return {
-      byBand: pricesFromNM(card.valueAudNM),
+      byBand: pricesFromNM(dollarsToCents(card.valueAudNM)),
       source: this.key,
       capturedAt: new Date(),
     };
