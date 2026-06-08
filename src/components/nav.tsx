@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { switchUserAction } from "@/app/actions/session";
 
 const LINKS = [
   { href: "/", label: "Dashboard" },
@@ -10,12 +11,24 @@ const LINKS = [
   { href: "/marketplace", label: "Marketplace" },
 ];
 
-export function Nav() {
+export interface NavUser {
+  id: string;
+  displayName: string;
+  trustTier: string;
+}
+
+export function Nav({
+  users,
+  currentUserId,
+}: {
+  users: NavUser[];
+  currentUserId: string;
+}) {
   const pathname = usePathname();
 
   return (
     <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-4">
         <Link href="/" className="font-semibold tracking-tight text-lg">
           Card<span className="text-accent">Swap</span>
         </Link>
@@ -38,6 +51,25 @@ export function Nav() {
             );
           })}
         </nav>
+
+        {/* Dev-only user switcher (stand-in for auth until Stage 5). */}
+        <form action={switchUserAction} className="ml-auto flex items-center gap-1">
+          <span className="text-[10px] uppercase tracking-wide text-muted">
+            Dev user
+          </span>
+          <select
+            name="userId"
+            defaultValue={currentUserId}
+            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            className="rounded-md bg-surface-2 border border-border px-2 py-1 text-xs text-foreground"
+          >
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.displayName} · {u.trustTier}
+              </option>
+            ))}
+          </select>
+        </form>
       </div>
     </header>
   );

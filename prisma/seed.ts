@@ -49,49 +49,85 @@ async function main() {
     }
   }
 
-  // Dev user (Stage 1 has no auth yet — Auth.js arrives in Stage 5).
-  const user = await prisma.user.upsert({
-    where: { email: "ash@cardswap.dev" },
-    update: {},
-    create: {
-      displayName: "Ash K.",
-      email: "ash@cardswap.dev",
-      region: "AU",
-      trustTier: "L2",
-      kycStatus: "VERIFIED",
-      completedTradeValueCents: 6000,
-      ratingAvg: 4.8,
-    },
-  });
-
-  // Give the dev user some inventory + HAVE listings so the UI has content.
-  const seedOwned = ["base1-4", "base1-58", "OP01-001", "OP01-120"];
-  for (const externalId of seedOwned) {
-    const catalogCard = await prisma.catalogCard.findFirst({
-      where: { externalId },
-    });
-    if (!catalogCard) continue;
-
-    const existing = await prisma.inventoryCard.findFirst({
-      where: { ownerId: user.id, catalogCardId: catalogCard.id },
-    });
-    if (existing) continue;
-
-    const inv = await prisma.inventoryCard.create({
-      data: {
-        ownerId: user.id,
-        catalogCardId: catalogCard.id,
-        condition: externalId === "base1-58" ? "LP" : "NM",
-        status: "LISTED",
+  // Two dev users (no auth yet — Auth.js arrives in Stage 5) so the two-sided
+  // trade flows in Stage 3 can be exercised via the dev user-switcher.
+  async function seedUser(data: {
+    displayName: string;
+    email: string;
+    trustTier: string;
+    completedTradeValueCents: number;
+    ratingAvg: number;
+    // externalId → condition; all listed HAVE so they show in the marketplace.
+    owns: Record<string, "NM" | "LP" | "PL" | "PO">;
+  }) {
+    const user = await prisma.user.upsert({
+      where: { email: data.email },
+      update: {},
+      create: {
+        displayName: data.displayName,
+        email: data.email,
+        region: "AU",
+        trustTier: data.trustTier,
+        kycStatus: "VERIFIED",
+        completedTradeValueCents: data.completedTradeValueCents,
+        ratingAvg: data.ratingAvg,
       },
     });
 
-    await prisma.listing.create({
-      data: { userId: user.id, type: "HAVE", inventoryCardId: inv.id },
-    });
+    for (const [externalId, condition] of Object.entries(data.owns)) {
+      const catalogCard = await prisma.catalogCard.findFirst({
+        where: { externalId },
+      });
+      if (!catalogCard) continue;
+      const existing = await prisma.inventoryCard.findFirst({
+        where: { ownerId: user.id, catalogCardId: catalogCard.id },
+      });
+      if (existing) continue;
+      const inv = await prisma.inventoryCard.create({
+        data: {
+          ownerId: user.id,
+          catalogCardId: catalogCard.id,
+          condition,
+          status: "LISTED",
+        },
+      });
+      await prisma.listing.create({
+        data: { userId: user.id, type: "HAVE", inventoryCardId: inv.id },
+      });
+    }
   }
 
+  await seedUser({
+    displayName: "Ash K.",
+    email: "ash@cardswap.dev",
+    trustTier: "L2",
+    completedTradeValueCents: 6000,
+    ratingAvg: 4.8,
+    owns: {
+      "base1-4": "NM", // Charizard
+      "base1-58": "LP", // Pikachu
+      "OP01-001": "NM", // Zoro
+      "OP01-120": "NM", // Luffy alt-art
+    },
+  });
+
+  await seedUser({
+    displayName: "Misty W.",
+    email: "misty@cardswap.dev",
+    trustTier: "L3",
+    completedTradeValueCents: 18000,
+    ratingAvg: 4.9,
+    owns: {
+      "base1-2": "NM", // Blastoise
+      "base1-15": "NM", // Venusaur
+      "base1-10": "LP", // Mewtwo
+      "base1-14": "NM", // Raichu
+      "OP13-001": "NM", // Luffy leader (unpriced in live mode)
+    },
+  });
+
   const counts = {
+    users: await prisma.user.count(),
     catalog: await prisma.catalogCard.count(),
     prices: await prisma.priceSnapshot.count(),
     inventory: await prisma.inventoryCard.count(),

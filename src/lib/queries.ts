@@ -1,16 +1,32 @@
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { ConditionBand } from "@/lib/enums";
+
+/** Cookie holding the active user id. Dev-only stand-in for real auth, which
+ * arrives in Stage 5. Lets us switch between seeded users to exercise the
+ * two-sided trade flows. */
+export const USER_COOKIE = "cardswap_uid";
 
 /**
  * Read-side data access for Stage 1. Keeps Prisma usage out of the page
  * components. Pure reads against the seeded data; writes arrive in Stage 2+.
  */
 
-/** The signed-in user. Stage 1 has no auth — return the seeded dev user. */
+/** The active user. No real auth yet (Stage 5) — resolve from the dev cookie,
+ * falling back to the first seeded user. */
 export async function getCurrentUser() {
-  const user = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!user) throw new Error("No user found — run `npm run db:seed`.");
-  return user;
+  const id = (await cookies()).get(USER_COOKIE)?.value;
+  if (id) {
+    const picked = await prisma.user.findUnique({ where: { id } });
+    if (picked) return picked;
+  }
+  const first = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+  if (!first) throw new Error("No user found — run `npm run db:seed`.");
+  return first;
+}
+
+export async function getAllUsers() {
+  return prisma.user.findMany({ orderBy: { createdAt: "asc" } });
 }
 
 export interface CardValue {

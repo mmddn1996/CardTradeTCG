@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { getAllUsers, getCurrentUser } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "CardSwap — card-for-card trading",
@@ -15,15 +16,27 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [users, currentUser] = await Promise.all([
+    getAllUsers(),
+    getCurrentUser(),
+  ]);
+
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <Nav />
+        <Nav
+          users={users.map((u) => ({
+            id: u.id,
+            displayName: u.displayName,
+            trustTier: u.trustTier,
+          }))}
+          currentUserId={currentUser.id}
+        />
         <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-6">
           {children}
         </main>

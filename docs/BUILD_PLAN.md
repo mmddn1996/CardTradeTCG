@@ -66,6 +66,13 @@ working product sooner.
   fallback creates an unpriced card and files a gap (§4.6).
 - ✅ Unit tests for the value rules (clamp, freshness, band derivation).
 
+### Pre-Stage-3 hardening  ← *done*
+- ✅ Money stored as **integer AUD cents** end-to-end (exact delta/threshold maths).
+- ✅ **Second seeded user** (Misty W.) + a **dev user-switcher** in the nav
+  (cookie-based stand-in for auth) so two-sided offer flows can be exercised.
+- ✅ Lookup/image fixes: expanded mock catalog incl. `OP13`, apitcg.com One Piece
+  provider, hardened Pokémon search.
+
 ### Stage 3 — Trading & negotiation engine
 - `Offer`, `Trade`, baskets; HAVE/WANT listings wired to offers.
 - Offer state machine (DRAFT→PENDING→COUNTERED→ACCEPTED/REJECTED/EXPIRED/CANCELLED, §5.2).
