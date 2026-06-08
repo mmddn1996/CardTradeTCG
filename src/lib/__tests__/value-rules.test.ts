@@ -4,7 +4,7 @@ import {
   clampDeclaredValue,
   isStale,
 } from "@/lib/value-rules";
-import { pricesFromNM, CONDITION_MULTIPLIER } from "@/lib/pricing";
+import { pricesFromNM, CONDITION_MULTIPLIER, completeBands } from "@/lib/pricing";
 
 describe("isStale (Spec §3.3 stale-price guard)", () => {
   const now = 1_000_000_000_000;
@@ -38,6 +38,19 @@ describe("clampDeclaredValue (Spec §3.3 declared-value ceiling)", () => {
   });
   it("allows any value when the card is unpriced", () => {
     expect(clampDeclaredValue(50, null)).toEqual({ value: 50, clamped: false });
+  });
+});
+
+describe("completeBands (fill missing bands from a price source)", () => {
+  it("keeps explicit per-condition prices and fills the rest from NM", () => {
+    const out = completeBands({ NM: 1000, LP: 850 });
+    expect(out.NM).toBe(1000);
+    expect(out.LP).toBe(850); // explicit value preserved (not 800 from multiplier)
+    expect(out.PL).toBe(Math.round(1000 * CONDITION_MULTIPLIER.PL));
+    expect(out.PO).toBe(Math.round(1000 * CONDITION_MULTIPLIER.PO));
+  });
+  it("returns the partial unchanged when there's no NM price", () => {
+    expect(completeBands({ LP: 500 })).toEqual({ LP: 500 });
   });
 });
 

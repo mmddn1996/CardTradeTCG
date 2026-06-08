@@ -29,6 +29,24 @@ export function pricesFromNM(
   };
 }
 
+/**
+ * Fill any missing condition band from the Near-Mint price via the multipliers,
+ * keeping whatever explicit per-band prices a source already provided. If there
+ * is no NM price, the partial map is returned unchanged.
+ */
+export function completeBands(
+  partial: Partial<Record<ConditionBand, number>>,
+): Partial<Record<ConditionBand, number>> {
+  if (partial.NM == null) return partial;
+  const base = pricesFromNM(partial.NM);
+  const out: Record<ConditionBand, number> = { ...base };
+  for (const band of Object.keys(partial) as ConditionBand[]) {
+    const v = partial[band];
+    if (v != null) out[band] = v;
+  }
+  return out;
+}
+
 export function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100);
 }

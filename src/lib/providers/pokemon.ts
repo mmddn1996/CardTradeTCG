@@ -1,7 +1,5 @@
-import { pricesFromNM } from "@/lib/pricing";
-import { eurToAudCents, usdToAudCents } from "./fx";
 import { fetchJson } from "./http";
-import type { CatalogCardResult, CatalogProvider, PriceResult } from "./types";
+import type { CatalogCardResult, CatalogProvider } from "./types";
 
 const BASE = process.env.POKEMON_TCG_API_BASE ?? "https://api.pokemontcg.io/v2";
 
@@ -11,17 +9,14 @@ interface PokeCard {
   number: string;
   set?: { id: string; name: string };
   images?: { small?: string; large?: string };
-  tcgplayer?: {
-    prices?: Record<string, { market?: number | null; mid?: number | null }>;
-  };
-  cardmarket?: { prices?: { trendPrice?: number; averageSellPrice?: number } };
+  tcgplayer?: { prices?: Record<string, unknown> };
 }
 
 /**
- * Pokémon TCG API provider (https://pokemontcg.io). Live external source for
- * Stage 2. Network access to the API host must be allowlisted in the
- * environment for this to resolve; otherwise calls fail closed (return null)
- * and the caller falls back to the mock / catalog-gap path.
+ * Pokémon TCG API catalog provider (https://pokemontcg.io) — identity + art.
+ * Keyless (an optional key raises rate limits). Pricing is handled separately
+ * by the JustTCG pricing provider. Fails closed (null/[]) when the host is
+ * unreachable so callers degrade to the mock / catalog-gap path.
  */
 export class PokemonTcgProvider implements CatalogProvider {
   readonly key = "POKEMON_TCG_API";
@@ -66,20 +61,12 @@ export class PokemonTcgProvider implements CatalogProvider {
     return (list?.data ?? []).map(toResult);
   }
 
-  async getPrice(externalId: string): Promise<PriceResult | null> {
-    const res = await fetchJson<{ data: PokeCard }>(
-      `${BASE}/cards/${encodeURIComponent(externalId)}`,
+  async lookupBySet(setCode: string): Promise<CatalogCardResult[]> {
+    const list = await fetchJson<{ data: PokeCard[] }>(
+      `${BASE}/cards?q=${encodeURIComponent(`set.id:${setCode.trim()}`)}&pageSize=250&orderBy=number`,
       { headers: this.headers() },
     );
-    const card = res?.data;
-    if (!card) return null;
-    const nmCents = nmPriceAudCents(card);
-    if (nmCents == null) return null;
-    return {
-      byBand: pricesFromNM(nmCents),
-      source: this.key,
-      capturedAt: new Date(),
-    };
+    return (list?.data ?? []).map(toResult);
   }
 }
 
@@ -100,24 +87,4 @@ function toResult(c: PokeCard): CatalogCardResult {
     finish,
     imageUrl: c.images?.large ?? c.images?.small ?? null,
   };
-}
-
-/** Best Near-Mint price in AUD cents: prefer TCGplayer market (USD), fall back
- * to Cardmarket trend (EUR). */
-function nmPriceAudCents(c: PokeCard): number | null {
-  const tcg = c.tcgplayer?.prices;
-  if (tcg) {
-    const order = ["holofoil", "normal", "reverseHolofoil"];
-    for (const k of order) {
-      const p = tcg[k]?.market ?? tcg[k]?.mid;
-      if (p != null && p > 0) return usdToAudCents(p);
-    }
-    for (const k of Object.keys(tcg)) {
-      const p = tcg[k]?.market ?? tcg[k]?.mid;
-      if (p != null && p > 0) return usdToAudCents(p);
-    }
-  }
-  const cm = c.cardmarket?.prices?.trendPrice ?? c.cardmarket?.prices?.averageSellPrice;
-  if (cm != null && cm > 0) return eurToAudCents(cm);
-  return null;
 }

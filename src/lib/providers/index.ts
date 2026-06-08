@@ -2,22 +2,27 @@ import type { Game } from "@/lib/enums";
 import { MockProvider } from "./mock";
 import { PokemonTcgProvider } from "./pokemon";
 import { OnePieceProvider } from "./onepiece";
-import type { CatalogProvider } from "./types";
+import { JustTcgPricingProvider } from "./justtcg";
+import type { CatalogProvider, PricingProvider } from "./types";
 
-export type { CatalogProvider, CatalogCardResult, PriceResult } from "./types";
+export type {
+  CatalogProvider,
+  CatalogCardResult,
+  PricingProvider,
+  PriceRef,
+  PriceResult,
+} from "./types";
+
+function live(): boolean {
+  return (process.env.CARDSWAP_PROVIDERS ?? "mock") === "live";
+}
 
 /**
- * Provider registry. The active set is chosen by `CARDSWAP_PROVIDERS`:
- *   - "mock" (default): fully offline seeded data — works without network.
- *   - "live": real HTTP providers (Pokémon TCG API, One Piece). Requires the
- *     API hosts to be allowlisted in the environment's network policy.
- *
- * Callers never branch on the mode — this is the only place external data
- * sources are selected (Spec §4.5).
+ * Catalog (identity + art) provider per game. "live" requires the per-game API
+ * hosts to be allowlisted; "mock" (default) is fully offline.
  */
-export function getProvider(game: Game): CatalogProvider {
-  const mode = process.env.CARDSWAP_PROVIDERS ?? "mock";
-  if (mode === "live") {
+export function getCatalogProvider(game: Game): CatalogProvider {
+  if (live()) {
     switch (game) {
       case "POKEMON":
         return new PokemonTcgProvider();
@@ -26,4 +31,13 @@ export function getProvider(game: Game): CatalogProvider {
     }
   }
   return new MockProvider(game);
+}
+
+/**
+ * Pricing provider (one source for all games). Live mode uses JustTCG; mock
+ * mode prices from the seeded catalog. This is the only place a price source is
+ * chosen (Spec §4.5).
+ */
+export function getPricingProvider(game: Game): PricingProvider {
+  return live() ? new JustTcgPricingProvider() : new MockProvider(game);
 }

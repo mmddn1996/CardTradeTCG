@@ -28,10 +28,16 @@ export function CardImage({
     );
   }
 
+  // Route remote art through the proxy so hotlink-protected hosts still render;
+  // leave local/relative paths untouched.
+  const resolved = src.startsWith("http")
+    ? `/api/card-image?src=${encodeURIComponent(src)}`
+    : src;
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={resolved}
       alt={alt}
       loading="lazy"
       onError={() => setFailed(true)}

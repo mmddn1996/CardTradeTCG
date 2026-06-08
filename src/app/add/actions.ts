@@ -64,7 +64,7 @@ export async function addCardAction(
     imageUrl: d.imageUrl || null,
   });
 
-  const { prices } = await ensurePricing(card.id, d.externalId, d.game);
+  const { prices } = await ensurePricing(card);
   const marketCents = prices?.[d.condition as ConditionBand] ?? null;
   const declaredCents =
     d.declaredValue != null ? dollarsToCents(d.declaredValue) : null;

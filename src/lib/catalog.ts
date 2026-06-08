@@ -2,12 +2,24 @@ import "server-only";
 import type { ConditionBand, Game } from "@/lib/enums";
 import { ConditionBandSchema } from "@/lib/enums";
 import { prisma } from "@/lib/prisma";
-import { getProvider, type CatalogCardResult } from "@/lib/providers";
+import {
+  getCatalogProvider,
+  getPricingProvider,
+  type CatalogCardResult,
+} from "@/lib/providers";
+import { isStale, type BandPrices } from "@/lib/value-rules";
+
+// A single-card code, e.g. base1-4, OP13-001, sv3pt5-25, 4/102.
+const CARD_CODE = /^[a-z0-9]+(?:pt[0-9]+)?[-/]\d+[a-z]?$/i;
+// A set/expansion code, e.g. OP12, base1, sv3, swsh10.
+const SET_CODE = /^[a-z]{2,6}\d{1,3}[a-z]*$/i;
 
 /**
- * Resolve a user query to candidate cards. Tries an exact code lookup first
- * (cheap, near-unique — e.g. "base1-4" or "OP01-001"), then falls back to a
- * free-text search returning a ranked shortlist (Spec §4.2 fusion/rank).
+ * Resolve a user query to candidate cards, routing on the query shape so each
+ * lookup is a single request (fast):
+ *  - a card code  → exact lookup of one card;
+ *  - a set code   → every card in the set (Spec §4.4 set ingestion);
+ *  - anything else → free-text name search (Spec §4.2 ranked shortlist).
  */
 export async function lookupCards(
   game: Game,
@@ -15,12 +27,21 @@ export async function lookupCards(
 ): Promise<CatalogCardResult[]> {
   const q = query.trim();
   if (!q) return [];
-  const provider = getProvider(game);
-  const byCode = await provider.lookupByCode(q);
-  if (byCode) return [byCode];
+  const provider = getCatalogProvider(game);
+
+  if (CARD_CODE.test(q)) {
+    const hit = await provider.lookupByCode(q);
+    if (hit) return [hit];
+    // Not an exact code after all — fall back to a search.
+    return provider.search(q);
+  }
+  if (SET_CODE.test(q)) {
+    const set = await provider.lookupBySet(q);
+    if (set.length > 0) return set;
+    return provider.search(q);
+  }
   return provider.search(q);
 }
-import { isStale, type BandPrices } from "@/lib/value-rules";
 
 /**
  * Find-or-create a CatalogCard from a provider result, keyed by externalId.
@@ -70,25 +91,39 @@ async function readBandPrices(
  * failure it keeps and returns the prior (stale) snapshot, or null if there's
  * none — an unpriced card (Spec §4.6).
  */
-export async function ensurePricing(
-  catalogCardId: string,
-  externalId: string,
-  game: Game,
-): Promise<{ prices: BandPrices | null; source: string }> {
-  const provider = getProvider(game);
+export async function ensurePricing(card: {
+  id: string;
+  externalId: string | null;
+  game: string;
+  number: string;
+  name: string;
+  set: string;
+  finish: string | null;
+}): Promise<{ prices: BandPrices | null; source: string }> {
+  const provider = getPricingProvider(card.game as Game);
 
   const latest = await prisma.priceSnapshot.findFirst({
-    where: { catalogCardId, source: provider.key },
+    where: { catalogCardId: card.id, source: provider.key },
     orderBy: { capturedAt: "desc" },
   });
 
   if (latest && !isStale(latest.capturedAt)) {
-    return { prices: await readBandPrices(catalogCardId, provider.key), source: provider.key };
+    return {
+      prices: await readBandPrices(card.id, provider.key),
+      source: provider.key,
+    };
   }
 
-  const fresh = await provider.getPrice(externalId);
+  const fresh = await provider.getPrice({
+    game: card.game as Game,
+    externalId: card.externalId ?? "",
+    number: card.number,
+    name: card.name,
+    set: card.set,
+    finish: card.finish,
+  });
   if (!fresh) {
-    const prices = latest ? await readBandPrices(catalogCardId, provider.key) : null;
+    const prices = latest ? await readBandPrices(card.id, provider.key) : null;
     return { prices, source: provider.key };
   }
 
@@ -99,13 +134,18 @@ export async function ensurePricing(
     await prisma.priceSnapshot.upsert({
       where: {
         catalogCardId_conditionBand_source: {
-          catalogCardId,
+          catalogCardId: card.id,
           conditionBand: band,
           source: fresh.source,
         },
       },
       update: { valueCents, capturedAt: now },
-      create: { catalogCardId, conditionBand: band, valueCents, source: fresh.source },
+      create: {
+        catalogCardId: card.id,
+        conditionBand: band,
+        valueCents,
+        source: fresh.source,
+      },
     });
   }
   return { prices: fresh.byBand, source: fresh.source };

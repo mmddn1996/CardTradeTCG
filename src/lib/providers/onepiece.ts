@@ -1,5 +1,5 @@
 import { fetchJson } from "./http";
-import type { CatalogCardResult, CatalogProvider, PriceResult } from "./types";
+import type { CatalogCardResult, CatalogProvider } from "./types";
 
 const BASE =
   process.env.ONEPIECE_API_BASE ?? "https://apitcg.com/api/one-piece";
@@ -14,12 +14,11 @@ interface OpCard {
 }
 
 /**
- * One Piece Card Game provider. Wired against the apitcg.com shape (requires an
- * API key via ONEPIECE_API_KEY). The host must be allowlisted in the
- * environment; otherwise calls fail closed and the caller degrades to the mock
- * / catalog-gap path. No reliable free AUD price feed exists for One Piece yet,
- * so getPrice returns null and such cards stay "unpriced" (Spec §4.6) until a
- * price source is added behind this same interface.
+ * One Piece catalog provider (apitcg.com) — identity + art. Requires an API key
+ * (ONEPIECE_API_KEY). Pricing is handled separately by the JustTCG pricing
+ * provider (apitcg has no prices). apitcg matches string params as substrings,
+ * which we use: exact `id` for a single card, substring `code` for a whole set,
+ * substring `name` for free-text search.
  */
 export class OnePieceProvider implements CatalogProvider {
   readonly key = "ONEPIECE_API";
@@ -44,15 +43,16 @@ export class OnePieceProvider implements CatalogProvider {
       `${BASE}/cards?name=${encodeURIComponent(query.trim())}&limit=20`,
       { headers: this.headers() },
     );
-    const arr = Array.isArray(res?.data) ? res!.data! : [];
-    return arr.map(toResult);
+    return (Array.isArray(res?.data) ? res!.data! : []).map(toResult);
   }
 
-  async getPrice(): Promise<PriceResult | null> {
-    // apitcg.com serves card data + images but no AUD market price, so One Piece
-    // cards stay "unpriced" (Spec §4.6) — they can't be added to an offer until
-    // a One Piece price source is plugged in behind this same interface.
-    return null;
+  async lookupBySet(setCode: string): Promise<CatalogCardResult[]> {
+    // apitcg substring-matches `code`, so the set prefix returns the whole set.
+    const res = await fetchJson<{ data?: OpCard[] }>(
+      `${BASE}/cards?code=${encodeURIComponent(setCode.trim())}&limit=300`,
+      { headers: this.headers() },
+    );
+    return (Array.isArray(res?.data) ? res!.data! : []).map(toResult);
   }
 }
 

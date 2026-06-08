@@ -1,14 +1,20 @@
 import type { Game } from "@/lib/enums";
 import { dollarsToCents, pricesFromNM } from "@/lib/pricing";
 import { SAMPLE_CARDS, type SampleCard } from "./sample-data";
-import type { CatalogCardResult, CatalogProvider, PriceResult } from "./types";
+import type {
+  CatalogCardResult,
+  CatalogProvider,
+  PriceRef,
+  PriceResult,
+  PricingProvider,
+} from "./types";
 
 /**
- * Offline provider backed by the seeded sample dataset. Lets the whole app run
- * without network access (Stage 1). Real providers replace this in Stage 2
- * behind the identical CatalogProvider interface.
+ * Offline provider backed by the seeded sample dataset. Implements *both* the
+ * catalog and pricing interfaces so the whole app runs without network access
+ * (CARDSWAP_PROVIDERS=mock). Live mode swaps in the real per-game providers.
  */
-export class MockProvider implements CatalogProvider {
+export class MockProvider implements CatalogProvider, PricingProvider {
   readonly key = "MOCK";
   readonly game: Game;
   private cards: SampleCard[];
@@ -22,8 +28,7 @@ export class MockProvider implements CatalogProvider {
     const norm = code.trim().toLowerCase();
     const hit = this.cards.find(
       (c) =>
-        c.number.toLowerCase() === norm ||
-        c.externalId.toLowerCase() === norm,
+        c.number.toLowerCase() === norm || c.externalId.toLowerCase() === norm,
     );
     return hit ? toResult(hit) : null;
   }
@@ -41,8 +46,19 @@ export class MockProvider implements CatalogProvider {
       .map(toResult);
   }
 
-  async getPrice(externalId: string): Promise<PriceResult | null> {
-    const card = this.cards.find((c) => c.externalId === externalId);
+  async lookupBySet(setCode: string): Promise<CatalogCardResult[]> {
+    const s = setCode.trim().toLowerCase();
+    return this.cards
+      .filter(
+        (c) =>
+          c.externalId.toLowerCase().startsWith(`${s}-`) ||
+          c.set.toLowerCase().includes(s),
+      )
+      .map(toResult);
+  }
+
+  async getPrice(ref: PriceRef): Promise<PriceResult | null> {
+    const card = this.cards.find((c) => c.externalId === ref.externalId);
     if (!card) return null;
     return {
       byBand: pricesFromNM(dollarsToCents(card.valueAudNM)),
