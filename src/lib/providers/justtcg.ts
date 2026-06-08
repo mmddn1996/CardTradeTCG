@@ -22,8 +22,9 @@ interface JtVariant {
 interface JtCard {
   id?: string;
   name?: string;
-  number?: string;
-  set?: string;
+  number?: string; // e.g. "71/99" (Pokémon) or "OP01-001" (One Piece)
+  set?: string; // slug, e.g. "arceus-pokemon"
+  set_name?: string; // display, e.g. "Arceus"
   variants?: JtVariant[];
 }
 
@@ -49,7 +50,7 @@ export class JustTcgPricingProvider implements PricingProvider {
     // the name is more reliable, then we match on collector number.
     const query = ref.game === "ONE_PIECE" ? ref.number : ref.name;
     const res = await fetchJson<{ data?: JtCard[] }>(
-      `${BASE}/cards?game=${slug}&q=${encodeURIComponent(query)}&limit=20`,
+      `${BASE}/cards?game=${slug}&q=${encodeURIComponent(query)}&limit=50`,
       { headers: this.headers() },
     );
     const cards = res?.data ?? [];
@@ -69,14 +70,34 @@ export class JustTcgPricingProvider implements PricingProvider {
   }
 }
 
-/** Pick the result whose collector number best matches the requested card. */
+/** Pick the result that best matches the requested card. A name search can
+ * return many cards (esp. Pokémon), so match on collector number — comparing
+ * the base number before any "/NN" set total — and prefer a matching set. */
 function bestMatch(cards: JtCard[], ref: PriceRef): JtCard | undefined {
-  const want = normalize(ref.number);
-  const byNumber = cards.find((c) => {
-    const n = normalize(c.number ?? "");
-    return n && (n === want || n.endsWith(want) || want.endsWith(n));
-  });
-  return byNumber ?? cards[0];
+  const wantNum = baseNumber(ref.number);
+  const wantSet = normalize(ref.set);
+
+  const numberMatches = cards.filter(
+    (c) => wantNum !== "" && baseNumber(c.number ?? "") === wantNum,
+  );
+  if (numberMatches.length > 0) {
+    return (
+      numberMatches.find((c) => setMatches(c, wantSet)) ?? numberMatches[0]
+    );
+  }
+  return cards.find((c) => setMatches(c, wantSet)) ?? cards[0];
+}
+
+/** The card number before the "/NN" set total, normalized (e.g. "71/99"→"71",
+ * "OP01-001"→"op01001"). */
+function baseNumber(num: string): string {
+  return normalize(num.split("/")[0]);
+}
+
+function setMatches(c: JtCard, wantSet: string): boolean {
+  if (!wantSet) return false;
+  const s = normalize(c.set_name ?? c.set ?? "");
+  return s !== "" && (s.includes(wantSet) || wantSet.includes(s));
 }
 
 /** Collapse JustTCG's per-condition variants into our four bands (AUD cents).
