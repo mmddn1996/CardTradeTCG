@@ -59,6 +59,6 @@ fully offline.
 ## Roadmap
 1. **Stage 1 — Basic interface & POC** ✅
 2. **Stage 2 — Add cards by code lookup** ✅
-3. Stage 3 — Trading & negotiation engine
+3. **Stage 3 — Trading & negotiation engine** ✅
 4. Stage 4 — Phone card scanning (PWA camera)
 5. Stage 5 — Trust tiers, KYC, settlement, Premium Protection, governance

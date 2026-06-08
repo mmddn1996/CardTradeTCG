@@ -73,12 +73,14 @@ working product sooner.
 - ✅ Lookup/image fixes: expanded mock catalog incl. `OP13`, apitcg.com One Piece
   provider, hardened Pokémon search.
 
-### Stage 3 — Trading & negotiation engine
-- `Offer`, `Trade`, baskets; HAVE/WANT listings wired to offers.
-- Offer state machine (DRAFT→PENDING→COUNTERED→ACCEPTED/REJECTED/EXPIRED/CANCELLED, §5.2).
-- Multi-card baskets, counter-offers, pull-from-counterparty-listings (§5.3).
-- Live value-delta badge; **overpay confirmation >15%** speed-bump (§5.5).
-- Soft/hard locking + atomic two-phase accept with re-price/volatility check (§5.6).
+### Stage 3 — Trading & negotiation engine  ← *done*
+- ✅ `Offer`/`OfferItem`/`Trade` models; offer state machine (§5.2).
+- ✅ Multi-card baskets, counter-offers, pull-from-counterparty-listings (§5.3).
+- ✅ Live value-delta badge; **overpay confirmation >15%** speed-bump (§5.5).
+- ✅ Trust-tier ceiling enforced at acceptance — the only value gate (§6).
+- ✅ Soft/hard locking + atomic two-phase accept with re-price/volatility
+  check + auto-revert of conflicting pending offers (§5.6).
+- ✅ Engine integration tests (locking / two-phase commit / conflict-revert).
 
 ### Stage 4 — Phone card scanning
 - PWA camera capture with guided overlay + on-device glare/blur/crop checks (§4.1).
