@@ -6,8 +6,15 @@ import type { CatalogCardResult, CatalogProvider, SetInfo } from "./types";
 const BASE =
   process.env.ONEPIECE_API_BASE ?? "https://www.apitcg.com/api/one-piece";
 
+// apitcg shapes (verified against live responses):
+// - every /cards call is paginated: { page, limit, total, data: [...] }
+// - `id` is NOT unique: alt-arts share `code` but get an `_pN` suffix on `id`
+// - `ability` holds the rules text; `trigger` is often ""; there is no `effect`
+// - `counter` is a string ("-" when none); `cost`/`power` are numbers
+// - images are hosted on en.onepiece-cardgame.com (proxied for hotlinking)
+// - `set` is { name } only — there is no set-code field on a card
 interface OpCard {
-  id: string; // e.g. OP01-001
+  id: string;
   code?: string;
   name: string;
   set?: { name?: string } | string;
@@ -15,21 +22,24 @@ interface OpCard {
   image?: string;
   ability?: string;
   trigger?: string;
-  effect?: string;
   type?: string;
   rarity?: string;
   cost?: string | number;
   power?: string | number;
   counter?: string | number;
+  color?: string;
   family?: string;
+}
+
+interface OpListResponse {
+  data?: OpCard[];
 }
 
 /**
  * One Piece catalog provider (apitcg.com) — identity + art. Requires an API key
- * (ONEPIECE_API_KEY). Pricing is handled separately by the JustTCG pricing
- * provider (apitcg has no prices). apitcg matches string params as substrings,
- * which we use: exact `id` for a single card, substring `code` for a whole set,
- * substring `name` for free-text search.
+ * (ONEPIECE_API_KEY). Pricing is handled separately by JustTCG (apitcg has no
+ * prices). Set browsing is best-effort: apitcg has no card→set-code link, so we
+ * try a `set`/`code` filter and keep only cards whose set name carries the code.
  */
 export class OnePieceProvider implements CatalogProvider {
   readonly key = "ONEPIECE_API";
@@ -40,35 +50,49 @@ export class OnePieceProvider implements CatalogProvider {
     return apiKey ? { "x-api-key": apiKey } : {};
   }
 
+  private async fetchCards(qs: string): Promise<OpCard[]> {
+    const res = await fetchJson<OpListResponse>(`${BASE}/cards?${qs}`, {
+      headers: this.headers(),
+    });
+    return Array.isArray(res?.data) ? res!.data! : [];
+  }
+
   async lookupByCode(code: string): Promise<CatalogCardResult | null> {
     const q = code.trim();
-    // Try the exact id first, then the card code, before giving up.
     for (const param of ["id", "code"]) {
-      const res = await fetchJson<{ data?: OpCard[] | OpCard }>(
-        `${BASE}/cards?${param}=${encodeURIComponent(q)}`,
-        { headers: this.headers() },
-      );
-      const card = pickFirst(res?.data);
-      if (card) return toResult(card);
+      const cards = await this.fetchCards(`${param}=${encodeURIComponent(q)}`);
+      if (cards.length === 0) continue;
+      // Prefer the base printing (exact id, no _pN alt-art suffix).
+      const base =
+        cards.find((c) => c.id === q) ??
+        cards.find((c) => c.code === q && !c.id?.includes("_")) ??
+        cards[0];
+      return toResult(base);
     }
     return null;
   }
 
   async search(query: string): Promise<CatalogCardResult[]> {
-    const res = await fetchJson<{ data?: OpCard[] }>(
-      `${BASE}/cards?name=${encodeURIComponent(query.trim())}&limit=20`,
-      { headers: this.headers() },
+    const cards = await this.fetchCards(
+      `name=${encodeURIComponent(query.trim())}&limit=30`,
     );
-    return (Array.isArray(res?.data) ? res!.data! : []).map(toResult);
+    return cards.map(toResult);
   }
 
   async lookupBySet(setCode: string): Promise<CatalogCardResult[]> {
-    // apitcg substring-matches `code`, so the set prefix returns the whole set.
-    const res = await fetchJson<{ data?: OpCard[] }>(
-      `${BASE}/cards?code=${encodeURIComponent(setCode.trim())}&limit=300`,
-      { headers: this.headers() },
-    );
-    return (Array.isArray(res?.data) ? res!.data! : []).map(toResult);
+    const code = setCode.trim();
+    for (const param of ["set", "code"]) {
+      const cards = await this.fetchCards(
+        `${param}=${encodeURIComponent(code)}&limit=300`,
+      );
+      // Guard against an ignored param returning unrelated cards: keep only
+      // those whose set name carries this set code (e.g. "… [OP01]").
+      const matched = cards.filter((c) =>
+        setName(c).toUpperCase().includes(code.toUpperCase()),
+      );
+      if (matched.length > 0) return matched.map(toResult);
+    }
+    return [];
   }
 
   async listSets(): Promise<SetInfo[]> {
@@ -78,35 +102,47 @@ export class OnePieceProvider implements CatalogProvider {
     );
     const arr = Array.isArray(res?.data) ? res!.data! : [];
     return arr
-      .map((s) => ({ code: s.code ?? s.id ?? "", name: s.name ?? s.code ?? s.id ?? "", game: "ONE_PIECE" as const }))
+      .map((s) => ({
+        code: s.code ?? s.id ?? "",
+        name: s.name ?? s.code ?? s.id ?? "",
+        game: "ONE_PIECE" as const,
+      }))
       .filter((s) => s.code);
   }
 }
 
-function pickFirst(data: OpCard[] | OpCard | undefined): OpCard | null {
-  if (!data) return null;
-  return Array.isArray(data) ? (data[0] ?? null) : data;
+function setName(c: OpCard): string {
+  return (typeof c.set === "string" ? c.set : c.set?.name) ?? "";
+}
+
+function titleCase(t?: string): string | null {
+  if (!t) return null;
+  return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
 }
 
 function toResult(c: OpCard): CatalogCardResult {
-  const set = typeof c.set === "string" ? c.set : c.set?.name;
-  const desc = [c.ability, c.effect, c.trigger && `[Trigger] ${c.trigger}`]
+  // Alt-arts (id "OP01-001_p1") share the printed code; keep them distinct via
+  // a variant so the natural-key unique constraint doesn't collide.
+  const suffix = c.id?.includes("_") ? c.id.slice(c.id.indexOf("_") + 1) : null;
+  const desc = [c.ability, c.trigger ? `[Trigger] ${c.trigger}` : null]
     .filter(Boolean)
     .join("\n");
+  const counter =
+    c.counter != null && String(c.counter) !== "-" ? String(c.counter) : null;
   return {
     externalId: c.id ?? c.code ?? c.name,
     game: "ONE_PIECE",
-    set: set ?? "One Piece",
-    number: c.id ?? c.code ?? "—",
+    set: setName(c) || "One Piece",
+    number: c.code ?? c.id ?? "—",
     name: c.name,
-    variant: null,
+    variant: suffix ? `Alt art (${suffix})` : null,
     finish: null,
     imageUrl: c.images?.large ?? c.images?.small ?? c.image ?? null,
     description: desc || null,
     rarity: c.rarity ?? null,
-    cardType: [c.type, c.family].filter(Boolean).join(" · ") || null,
+    cardType: [titleCase(c.type), c.family].filter(Boolean).join(" · ") || null,
     cost: c.cost != null ? String(c.cost) : null,
     power: c.power != null ? String(c.power) : null,
-    counter: c.counter != null ? String(c.counter) : null,
+    counter,
   };
 }
