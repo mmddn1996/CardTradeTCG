@@ -15,20 +15,69 @@ const GAME_LABEL: Record<string, string> = {
 };
 
 /* ---------- real card image in the TCG-proportioned frame ---------- */
-export function CardArt({ src, alt }: { src?: string | null; alt: string }) {
+export function CardArt({
+  src,
+  alt,
+  game,
+  flip = false,
+}: {
+  src?: string | null;
+  alt: string;
+  game?: string;
+  flip?: boolean;
+}) {
   const [failed, setFailed] = useState(false);
   const resolved = src && src.startsWith("http")
     ? `/api/card-image?src=${encodeURIComponent(src)}`
     : src;
+  const face =
+    resolved && !failed ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={resolved} alt={alt} loading="lazy" onError={() => setFailed(true)} />
+    ) : (
+      <span className="cs-cardimg-fallback">{alt}</span>
+    );
+
+  // Plain (non-flip) — used for small thumbnails (baskets, trade log, drawer).
+  if (!flip) {
+    return (
+      <div className="cs-cardbox">
+        <div className="cs-cardimg">{face}</div>
+      </div>
+    );
+  }
+
+  // Flip on hover — front (the art) rotates to a CSS-only, game-tinted back.
   return (
     <div className="cs-cardbox">
-      <div className="cs-cardimg">
-        {resolved && !failed ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={resolved} alt={alt} loading="lazy" onError={() => setFailed(true)} />
-        ) : (
-          <span className="cs-cardimg-fallback">{alt}</span>
-        )}
+      <div className="cs-card3d">
+        <div className="cs-card3d-inner">
+          <div className="cs-card3d-front">{face}</div>
+          <CardBack game={game} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Original, game-tinted card back (no card IP) carrying the CardSwap mark. */
+function CardBack({ game }: { game?: string }) {
+  const cls =
+    game === "POKEMON" || game === "ONE_PIECE" ? `cs-cardback-${game}` : "cs-cardback-default";
+  return (
+    <div className={`cs-card3d-back cs-cardback ${cls}`} aria-hidden="true">
+      <div className="cs-cardback-inner">
+        <svg viewBox="0 0 512 512" role="img" aria-label="CardSwap">
+          <rect width="512" height="512" rx="114" fill="#0FB5A8" />
+          <g transform="translate(256,256)">
+            <rect x="-118" y="-86" width="150" height="210" rx="22" transform="rotate(-12 -43 19)" fill="#F5F7F8" />
+            <rect x="-32" y="-86" width="150" height="210" rx="22" transform="rotate(12 43 19)" fill="#FF6B5C" />
+            <g strokeWidth="13" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M-44 22 L44 22 M-44 22 L-18 -4 M-44 22 L-18 48" stroke="#0FB5A8" />
+              <path d="M44 -22 L-44 -22 M44 -22 L18 -48 M44 -22 L18 4" stroke="#F5F7F8" />
+            </g>
+          </g>
+        </svg>
       </div>
     </div>
   );

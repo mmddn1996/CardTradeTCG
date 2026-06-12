@@ -23,7 +23,7 @@ export function CardTile({ card }: { card: TileCard }) {
     <div className={`cs-tile cs-tile-data${card.softLocked ? " cs-tile-dim" : ""} cs-tile-click`}>
       <div className="cs-tile-artwrap">
         <Link href={`/cards/${card.catalogId}`}>
-          <CardArt src={card.imageUrl} alt={card.name} />
+          <CardArt src={card.imageUrl} alt={card.name} game={card.game} flip />
         </Link>
         {card.state && <div className="cs-tile-corner"><StatePill state={card.state} /></div>}
         {card.softLocked && (

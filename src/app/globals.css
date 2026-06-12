@@ -103,6 +103,40 @@ a { color: inherit; text-decoration: none; }
   background: radial-gradient(120% 90% at 50% 0%, var(--surface-2), var(--bg-3));
 }
 
+/* ----- 3D hover flip (front art → game-tinted CardSwap back) ----- */
+.cs-card3d { width: 100%; perspective: 1100px; }
+.cs-card3d-inner {
+  position: relative; width: 100%; aspect-ratio: 63 / 88;
+  transform-style: preserve-3d; transition: transform .65s cubic-bezier(.2,.7,.2,1);
+}
+.cs-card3d:hover .cs-card3d-inner,
+.cs-tile-click:hover .cs-card3d-inner { transform: rotateY(180deg); }
+.cs-card3d-front, .cs-card3d-back {
+  position: absolute; inset: 0; border-radius: 14px; overflow: hidden;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: inset 0 0 0 1px var(--line), var(--shadow-sm);
+}
+.cs-card3d-front { background: var(--surface-2); }
+.cs-card3d-front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cs-card3d-back { transform: rotateY(180deg); }
+.cs-cardback { display: grid; place-items: center; }
+.cs-cardback-inner {
+  width: 66%; aspect-ratio: 3 / 4; border-radius: 12px; display: grid; place-items: center;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
+}
+.cs-cardback svg { width: 46%; }
+.cs-cardback-default { background: radial-gradient(120% 90% at 50% 0%, #16223c, #0a0f1c); }
+.cs-cardback-default .cs-cardback-inner { background: linear-gradient(160deg, #1a2949, #0c1322); }
+.cs-cardback-POKEMON { background: radial-gradient(120% 90% at 50% 0%, #3a5bb0, #16285a); }
+.cs-cardback-POKEMON .cs-cardback-inner { background: linear-gradient(160deg, #2a4a96, #15275a); box-shadow: inset 0 0 0 2px rgba(232,184,75,.40); }
+.cs-cardback-ONE_PIECE { background: radial-gradient(120% 90% at 50% 0%, #8a241d, #2a0f0d); }
+.cs-cardback-ONE_PIECE .cs-cardback-inner { background: linear-gradient(160deg, #6e1a16, #240b09); box-shadow: inset 0 0 0 2px rgba(245,247,248,.30); }
+@media (prefers-reduced-motion: reduce) {
+  .cs-card3d-inner { transition: none; }
+  .cs-card3d:hover .cs-card3d-inner,
+  .cs-tile-click:hover .cs-card3d-inner { transform: none; }
+}
+
 /* ============================================================ CHIPS / BADGES / PILLS ===== */
 .cs-chip { display: inline-flex; align-items: center; gap: .3em; font-size: 11px; font-weight: 600;
   line-height: 1; padding: 4px 8px; border-radius: 7px; white-space: nowrap; }
@@ -306,8 +340,7 @@ a { color: inherit; text-decoration: none; }
 .cs-detail-stage { position: sticky; top: 92px; border-radius: var(--radius-lg); padding: 40px 40px 28px; background: var(--stage);
   box-shadow: inset 0 0 0 1px var(--line); display: flex; flex-direction: column; align-items: center; gap: 22px; }
 [data-theme="vault"] .cs-detail-stage { background: radial-gradient(120% 90% at 50% 0%, #1a2949, #0a0f1c 70%); }
-.cs-detail-card { width: 100%; max-width: 320px; filter: drop-shadow(0 30px 50px rgba(0,0,0,.4)); transform-style: preserve-3d; transition: transform .3s; }
-.cs-detail-stage:hover .cs-detail-card { transform: rotateY(-6deg) rotateX(3deg); }
+.cs-detail-card { width: 100%; max-width: 320px; filter: drop-shadow(0 30px 50px rgba(0,0,0,.4)); }
 .cs-detail-name { font-family: var(--font-display); font-size: clamp(28px,3.4vw,40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; margin-bottom: 10px; }
 [data-theme="atelier"] .cs-detail-name { font-weight: 500; }
 .cs-detail-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }

@@ -39,7 +39,7 @@ export default async function CardDetailPage({
       <div className="cs-detail">
         <div className="cs-detail-stage">
           <div className="cs-detail-card">
-            <CardArt src={card.imageUrl} alt={card.name} />
+            <CardArt src={card.imageUrl} alt={card.name} game={card.game} flip />
           </div>
         </div>
 
