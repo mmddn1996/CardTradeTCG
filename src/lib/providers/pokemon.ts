@@ -14,6 +14,11 @@ interface PokeCard {
   rules?: string[];
   abilities?: { name: string; text: string }[];
   attacks?: { name: string; damage?: string; text?: string }[];
+  rarity?: string;
+  hp?: string;
+  supertype?: string;
+  subtypes?: string[];
+  types?: string[];
 }
 
 /**
@@ -103,6 +108,9 @@ function toResult(c: PokeCard): CatalogCardResult {
     finish,
     imageUrl: c.images?.large ?? c.images?.small ?? null,
     description: describe(c),
+    rarity: c.rarity ?? null,
+    cardType: [c.types?.join("/"), c.subtypes?.join(" ")].filter(Boolean).join(" · ") || null,
+    power: c.hp ? `${c.hp} HP` : null,
   };
 }
 

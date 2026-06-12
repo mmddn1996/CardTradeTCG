@@ -36,7 +36,8 @@ export async function submitOfferAction(
     return { error: res.error, needsOverpayConfirm: res.needsOverpayConfirm };
 
   revalidatePath("/offers");
-  redirect(`/offers/${res.offerId}`);
+  revalidatePath("/marketplace");
+  redirect(`/offers/${res.offerId}/sent`);
 }
 
 export async function acceptAction(

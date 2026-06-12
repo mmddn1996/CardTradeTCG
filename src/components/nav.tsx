@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { switchUserAction } from "@/app/actions/session";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import {
   IconAdd,
   IconBell,
@@ -100,6 +101,7 @@ export function Nav({
         <div className="cs-nav-right">
           <button className="cs-iconbtn" aria-label="Search"><IconSearch /></button>
           <button className="cs-iconbtn" aria-label="Notifications"><IconBell /></button>
+          <ThemeSwitcher />
           <DevSwitch users={users} currentUserId={currentUserId} />
         </div>
       </nav>

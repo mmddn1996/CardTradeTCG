@@ -94,5 +94,10 @@ function toResult(c: SampleCard): CatalogCardResult {
     finish: c.finish ?? null,
     imageUrl: c.imageUrl ?? null,
     description: c.description ?? null,
+    rarity: c.rarity ?? null,
+    cardType: c.cardType ?? null,
+    cost: c.cost ?? null,
+    power: c.power ?? null,
+    counter: c.counter ?? null,
   };
 }

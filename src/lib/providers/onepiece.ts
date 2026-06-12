@@ -16,6 +16,12 @@ interface OpCard {
   ability?: string;
   trigger?: string;
   effect?: string;
+  type?: string;
+  rarity?: string;
+  cost?: string | number;
+  power?: string | number;
+  counter?: string | number;
+  family?: string;
 }
 
 /**
@@ -97,5 +103,10 @@ function toResult(c: OpCard): CatalogCardResult {
     finish: null,
     imageUrl: c.images?.large ?? c.images?.small ?? c.image ?? null,
     description: desc || null,
+    rarity: c.rarity ?? null,
+    cardType: [c.type, c.family].filter(Boolean).join(" · ") || null,
+    cost: c.cost != null ? String(c.cost) : null,
+    power: c.power != null ? String(c.power) : null,
+    counter: c.counter != null ? String(c.counter) : null,
   };
 }

@@ -42,6 +42,12 @@ model CatalogCard {
   finish      String? // e.g. normal | reverse-holo | foil
   imageUrl    String?
   description String? // rules / ability / effect text from the source
+  // Gameplay metadata (varies by game; null where a source doesn't provide it)
+  rarity      String?
+  cardType    String? // e.g. "Character · Straw Hat Crew" or "Fire · Stage 2 ex"
+  cost        String? // One Piece play cost
+  power       String? // One Piece power / Pokémon HP
+  counter     String? // One Piece counter value
   externalId  String? // id in the source API/provider
 
   prices    PriceSnapshot[]

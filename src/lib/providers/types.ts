@@ -20,6 +20,12 @@ export interface CatalogCardResult {
   imageUrl?: string | null;
   /** Rules / ability / effect text (Spec §4.4 catalog data). */
   description?: string | null;
+  /** Gameplay metadata (varies by game). */
+  rarity?: string | null;
+  cardType?: string | null;
+  cost?: string | null;
+  power?: string | null;
+  counter?: string | null;
 }
 
 /** A set/expansion the user can browse (Spec §4.4). */

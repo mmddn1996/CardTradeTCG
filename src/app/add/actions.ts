@@ -4,11 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import {
-  ConditionBandSchema,
-  GameSchema,
-  type ConditionBand,
-} from "@/lib/enums";
+import { ConditionBandSchema, GameSchema } from "@/lib/enums";
 import { prisma } from "@/lib/prisma";
 import {
   ensurePricing,
@@ -16,31 +12,30 @@ import {
   recordCatalogGap,
 } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/queries";
-import { dollarsToCents } from "@/lib/pricing";
 import { clampDeclaredValue } from "@/lib/value-rules";
 
 export interface AddState {
   error?: string;
 }
 
-const numberish = z
-  .string()
-  .transform((v) => (v.trim() === "" ? undefined : Number(v)))
-  .pipe(z.number().positive().optional());
+const nullable = z.string().nullish().transform((v) => v || null);
 
-const AddSchema = z.object({
+// The full provider result is passed through as a JSON `card` field.
+const CardJsonSchema = z.object({
   game: GameSchema,
   externalId: z.string().min(1),
   set: z.string().min(1),
   number: z.string().min(1),
   name: z.string().min(1),
-  variant: z.string().optional(),
-  finish: z.string().optional(),
-  imageUrl: z.string().optional(),
-  description: z.string().optional(),
-  condition: ConditionBandSchema,
-  declaredValue: numberish,
-  list: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
+  variant: nullable,
+  finish: nullable,
+  imageUrl: nullable,
+  description: nullable,
+  rarity: nullable,
+  cardType: nullable,
+  cost: nullable,
+  power: nullable,
+  counter: nullable,
 });
 
 /** Add a looked-up card to the signed-in user's inventory (Spec §4.5). */
@@ -48,41 +43,38 @@ export async function addCardAction(
   _prev: AddState,
   formData: FormData,
 ): Promise<AddState> {
-  const parsed = AddSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: "Invalid card details." };
-  const d = parsed.data;
+  let json: unknown;
+  try {
+    json = JSON.parse(String(formData.get("card") ?? "{}"));
+  } catch {
+    return { error: "Invalid card details." };
+  }
+  const parsedCard = CardJsonSchema.safeParse(json);
+  const condition = ConditionBandSchema.safeParse(formData.get("condition"));
+  if (!parsedCard.success || !condition.success)
+    return { error: "Invalid card details." };
+  const d = parsedCard.data;
+  const list = formData.get("list") === "on";
 
   const user = await getCurrentUser();
 
-  const card = await findOrCreateCatalogCard({
-    externalId: d.externalId,
-    game: d.game,
-    set: d.set,
-    number: d.number,
-    name: d.name,
-    variant: d.variant || null,
-    finish: d.finish || null,
-    imageUrl: d.imageUrl || null,
-    description: d.description || null,
-  });
+  const card = await findOrCreateCatalogCard(d);
 
   const { prices } = await ensurePricing(card);
-  const marketCents = prices?.[d.condition as ConditionBand] ?? null;
-  const declaredCents =
-    d.declaredValue != null ? dollarsToCents(d.declaredValue) : null;
-  const declared = clampDeclaredValue(declaredCents, marketCents);
+  const marketCents = prices?.[condition.data] ?? null;
+  const declared = clampDeclaredValue(null, marketCents);
 
   const inv = await prisma.inventoryCard.create({
     data: {
       ownerId: user.id,
       catalogCardId: card.id,
-      condition: d.condition,
-      status: d.list ? "LISTED" : "VAULT",
+      condition: condition.data,
+      status: list ? "LISTED" : "VAULT",
       declaredValueCents: declared.value,
     },
   });
 
-  if (d.list) {
+  if (list) {
     await prisma.listing.create({
       data: { userId: user.id, type: "HAVE", inventoryCardId: inv.id },
     });

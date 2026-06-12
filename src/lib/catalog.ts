@@ -66,6 +66,11 @@ export async function findOrCreateCatalogCard(result: CatalogCardResult) {
       finish: result.finish ?? null,
       imageUrl: result.imageUrl ?? null,
       description: result.description ?? null,
+      rarity: result.rarity ?? null,
+      cardType: result.cardType ?? null,
+      cost: result.cost ?? null,
+      power: result.power ?? null,
+      counter: result.counter ?? null,
     },
   });
 }

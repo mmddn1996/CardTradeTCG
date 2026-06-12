@@ -24,16 +24,8 @@ export function AddResultForm({ card }: { card: CatalogCardResult }) {
         </div>
       </div>
 
-      {/* identity carried through so the action needs no second lookup */}
-      <input type="hidden" name="game" value={card.game} />
-      <input type="hidden" name="externalId" value={card.externalId} />
-      <input type="hidden" name="set" value={card.set} />
-      <input type="hidden" name="number" value={card.number} />
-      <input type="hidden" name="name" value={card.name} />
-      <input type="hidden" name="variant" value={card.variant ?? ""} />
-      <input type="hidden" name="finish" value={card.finish ?? ""} />
-      <input type="hidden" name="imageUrl" value={card.imageUrl ?? ""} />
-      <input type="hidden" name="description" value={card.description ?? ""} />
+      {/* full provider result carried through so the action needs no re-lookup */}
+      <input type="hidden" name="card" value={JSON.stringify(card)} />
 
       <div className="cs-seg" style={{ marginTop: 2, width: "100%", justifyContent: "space-between" }}>
         {ConditionBandSchema.options.map((b, i) => (

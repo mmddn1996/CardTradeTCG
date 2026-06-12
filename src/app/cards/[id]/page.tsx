@@ -54,6 +54,11 @@ export default async function CardDetailPage({
           <h1 className="cs-detail-name">{card.name}</h1>
           <div className="cs-detail-meta">
             <span className="cs-metaitem"><b>{card.set}</b> · {card.number}</span>
+            {card.cardType && <span className="cs-metaitem">{card.cardType}</span>}
+            {card.rarity && <span className="cs-metaitem">{card.rarity}</span>}
+            {card.cost && <span className="cs-metaitem">Cost <b>{card.cost}</b></span>}
+            {card.power && <span className="cs-metaitem">Power <b>{card.power}</b></span>}
+            {card.counter && card.counter !== "—" && <span className="cs-metaitem">Counter <b>{card.counter}</b></span>}
             {card.variant && <span className="cs-metaitem">{card.variant}</span>}
           </div>
 
