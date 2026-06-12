@@ -92,10 +92,33 @@ export async function getMarketplaceListings() {
   );
 }
 
+/** Decide the card-detail call-to-action: the user owns a copy, someone lists
+ * one to trade, or neither. */
+export async function getCardCta(catalogCardId: string, userId: string) {
+  const mine = await prisma.inventoryCard.findFirst({
+    where: { catalogCardId, ownerId: userId },
+  });
+  if (mine) return { kind: "mine" as const };
+  const listed = await prisma.inventoryCard.findFirst({
+    where: { catalogCardId, status: "LISTED", ownerId: { not: userId } },
+    include: { owner: true },
+  });
+  if (listed)
+    return { kind: "offer" as const, inventoryCardId: listed.id, owner: listed.owner };
+  return { kind: "none" as const };
+}
+
 export async function getCatalogCard(id: string) {
   return prisma.catalogCard.findUnique({
     where: { id },
     include: { prices: { orderBy: { capturedAt: "desc" } } },
+  });
+}
+
+/** Number of completed (accepted) trades a user has taken part in. */
+export async function getCompletedTradeCount(userId: string): Promise<number> {
+  return prisma.trade.count({
+    where: { offer: { OR: [{ initiatorId: userId }, { responderId: userId }] } },
   });
 }
 

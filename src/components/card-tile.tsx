@@ -1,50 +1,52 @@
 import Link from "next/link";
-import { CardImage } from "@/components/card-image";
-import { ConditionBadge, GameBadge, StatusBadge } from "@/components/badges";
-import { ValueBadge } from "@/components/value-badge";
-import type { CardValue } from "@/lib/queries";
+import type { ReactNode } from "react";
+import { CardArt, ConditionChip, GameChip, StatePill, ValueBadge, IconLock } from "@/components/ui";
 
 export interface TileCard {
   catalogId: string;
   name: string;
+  game: string;
   set: string;
   number: string;
-  game: string;
-  variant?: string | null;
-  finish?: string | null;
   imageUrl?: string | null;
-  condition?: string;
-  status?: string;
-  value: CardValue | null;
-  ownerName?: string;
+  condition?: string | null;
+  valueCents: number | null;
+  asOf?: Date | null;
+  state?: string | null; // corner pill: VAULT | LISTED | LOCKED
+  softLocked?: boolean; // "in an active offer" overlay + dim
+  footer?: ReactNode; // e.g. marketplace owner row
+  action?: ReactNode; // e.g. Make offer button
 }
 
 export function CardTile({ card }: { card: TileCard }) {
   return (
-    <Link
-      href={`/cards/${card.catalogId}`}
-      className="group flex flex-col rounded-xl border border-border bg-surface p-3 hover:border-accent transition-colors"
-    >
-      <CardImage src={card.imageUrl} alt={card.name} className="w-full" />
-      <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-        <GameBadge game={card.game} />
-        {card.condition && <ConditionBadge band={card.condition} />}
-        {card.status && <StatusBadge status={card.status} />}
-      </div>
-      <div className="mt-1.5 font-medium leading-tight">{card.name}</div>
-      <div className="text-xs text-muted">
-        {card.set} · {card.number}
-        {card.finish ? ` · ${card.finish}` : ""}
-      </div>
-      {card.variant && (
-        <div className="text-[11px] text-accent mt-0.5">{card.variant}</div>
-      )}
-      <div className="mt-2 flex items-end justify-between">
-        <ValueBadge value={card.value} size="sm" />
-        {card.ownerName && (
-          <span className="text-[11px] text-muted">{card.ownerName}</span>
+    <div className={`cs-tile cs-tile-data${card.softLocked ? " cs-tile-dim" : ""} cs-tile-click`}>
+      <div className="cs-tile-artwrap">
+        <Link href={`/cards/${card.catalogId}`}>
+          <CardArt src={card.imageUrl} alt={card.name} />
+        </Link>
+        {card.state && <div className="cs-tile-corner"><StatePill state={card.state} /></div>}
+        {card.softLocked && (
+          <div className="cs-tile-lock"><IconLock /> In an active offer</div>
         )}
       </div>
-    </Link>
+      <div className="cs-tile-info">
+        <div className="cs-tile-info-top">
+          <Link href={`/cards/${card.catalogId}`} className="cs-tile-name">
+            {card.name}
+          </Link>
+          <ValueBadge valueCents={card.valueCents} asOf={card.asOf} size="sm" />
+        </div>
+        <div className="cs-tile-info-bot">
+          <GameChip game={card.game} />
+          {card.condition && <ConditionChip cond={card.condition} />}
+          <span className="cs-muted" style={{ fontSize: 11, marginLeft: "auto" }}>
+            {card.number}
+          </span>
+        </div>
+        {card.footer}
+      </div>
+      {card.action && <div className="cs-tile-action">{card.action}</div>}
+    </div>
   );
 }

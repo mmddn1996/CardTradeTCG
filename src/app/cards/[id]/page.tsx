@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CardImage } from "@/components/card-image";
-import { GameBadge } from "@/components/badges";
-import {
-  CONDITION_LABEL,
-  ConditionBandSchema,
-  type ConditionBand,
-} from "@/lib/enums";
-import { formatAud } from "@/lib/pricing";
-import { getCatalogCard } from "@/lib/queries";
+import { CardArt, ConditionChip, GameChip } from "@/components/ui";
+import { csAud } from "@/lib/format";
+import { IconArrowLeft, IconInfo } from "@/components/icons";
+import { CONDITION_LABEL, type ConditionBand } from "@/lib/enums";
+import { getCardCta, getCatalogCard, getCurrentUser } from "@/lib/queries";
+import { handleOf, highlightKeywords } from "@/lib/display";
 
 const BAND_ORDER: ConditionBand[] = ["NM", "LP", "PL", "PO"];
 
@@ -18,95 +15,100 @@ export default async function CardDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const user = await getCurrentUser();
   const card = await getCatalogCard(id);
   if (!card) notFound();
+  const cta = await getCardCta(card.id, user.id);
 
-  // Show one source's prices (the most recent), so we never mix a market feed's
-  // real per-condition values with the mock's derived ones.
+  // Single source's latest per-band value (most recent source).
   const primarySource = card.prices[0]?.source ?? null;
-  const latestByBand = new Map<string, (typeof card.prices)[number]>();
+  const byBand = new Map<string, number>();
   for (const p of card.prices) {
     if (p.source !== primarySource) continue;
-    if (!latestByBand.has(p.conditionBand)) latestByBand.set(p.conditionBand, p);
+    if (!byBand.has(p.conditionBand)) byBand.set(p.conditionBand, p.valueCents);
   }
+  const nm = byBand.get("NM") ?? Math.max(0, ...byBand.values());
+  const asOf = card.prices[0]?.capturedAt;
 
   return (
-    <div className="space-y-6">
-      <Link href="/collection" className="text-sm text-muted hover:text-foreground">
-        ← Back
+    <div>
+      <Link href="/collection" className="cs-btn cs-btn-ghost cs-btn-sm" style={{ marginBottom: 22 }}>
+        <IconArrowLeft /> Back
       </Link>
 
-      <div className="grid md:grid-cols-[220px_1fr] gap-6">
-        <CardImage src={card.imageUrl} alt={card.name} className="w-full" />
+      <div className="cs-detail">
+        <div className="cs-detail-stage">
+          <div className="cs-detail-card">
+            <CardArt src={card.imageUrl} alt={card.name} />
+          </div>
+        </div>
 
-        <div className="space-y-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <GameBadge game={card.game} />
-              {card.finish && (
-                <span className="text-xs text-muted">{card.finish}</span>
-              )}
-            </div>
-            <h1 className="text-2xl font-semibold mt-1">{card.name}</h1>
-            <p className="text-muted">
-              {card.set} · {card.number}
-            </p>
-            {card.variant && (
-              <p className="text-accent text-sm mt-1">{card.variant}</p>
+        <div>
+          <div className="cs-detail-meta">
+            <GameChip game={card.game} />
+            {card.finish && <span className="cs-metaitem">{card.finish}</span>}
+            {cta.kind === "offer" && (
+              <span className="cs-metaitem">@{handleOf(cta.owner)}</span>
             )}
+          </div>
+          <h1 className="cs-detail-name">{card.name}</h1>
+          <div className="cs-detail-meta">
+            <span className="cs-metaitem"><b>{card.set}</b> · {card.number}</span>
+            {card.variant && <span className="cs-metaitem">{card.variant}</span>}
           </div>
 
           {card.description && (
-            <div className="rounded-xl border border-border bg-surface p-4">
-              <h2 className="text-sm font-medium mb-1.5">Card text</h2>
-              <p className="text-sm text-muted whitespace-pre-line leading-relaxed">
-                {card.description}
-              </p>
+            <div className="cs-detail-block">
+              <h3>Card text</h3>
+              <div className="cs-cardtext">
+                {highlightKeywords(card.description).map((seg, i) =>
+                  seg.kw ? <b key={i} className="kw">{seg.t}</b> : <span key={i}>{seg.t}</span>,
+                )}
+              </div>
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-surface overflow-hidden">
-            <div className="px-4 py-2 border-b border-border text-sm font-medium">
-              Market value by condition
+          <div className="cs-detail-block">
+            <h3>Market value by condition</h3>
+            <div className="cs-valtable">
+              <div className="cs-valrow head">
+                <span>Condition</span><span>Relative</span><span style={{ textAlign: "right" }}>Value</span>
+              </div>
+              {BAND_ORDER.map((band) => {
+                const v = byBand.get(band) ?? null;
+                const pct = v != null && nm > 0 ? Math.round((v / nm) * 100) : 0;
+                return (
+                  <div key={band} className={`cs-valrow${band === "NM" ? " on" : ""}`}>
+                    <span className="cs-valcond">
+                      <ConditionChip cond={band} />
+                      <span className="cs-muted">{CONDITION_LABEL[band]}</span>
+                    </span>
+                    <span className="cs-valbar"><i style={{ width: `${pct}%` }} /></span>
+                    <span className="cs-valamt">{v != null ? csAud(v) : "—"}</span>
+                  </div>
+                );
+              })}
             </div>
-            <table className="w-full text-sm">
-              <thead className="text-muted text-left">
-                <tr>
-                  <th className="px-4 py-2 font-normal">Condition</th>
-                  <th className="px-4 py-2 font-normal text-right">Market value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BAND_ORDER.map((band) => {
-                  const snap = latestByBand.get(band);
-                  return (
-                    <tr key={band} className="border-t border-border/60">
-                      <td className="px-4 py-2">
-                        <span className="font-medium">{band}</span>{" "}
-                        <span className="text-muted text-xs">
-                          {CONDITION_LABEL[band]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-right font-medium">
-                        {snap ? formatAud(snap.valueCents) : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <div className="px-4 py-2 border-t border-border text-[11px] text-muted">
-              Source: {primarySource ?? "—"} · Reference only — value never gates
-              a trade.
+            <div className="cs-source-line">
+              <IconInfo /> Reference signal only — never required to trade. Source:{" "}
+              {primarySource ?? "—"}
+              {asOf ? ` · as of ${new Date(asOf).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : ""}
             </div>
           </div>
+
+          {cta.kind === "offer" && (
+            <Link href={`/offers/new?want=${cta.inventoryCardId}`} className="cs-btn cs-btn-primary cs-btn-lg">
+              Make an offer
+            </Link>
+          )}
+          {cta.kind === "mine" && (
+            <Link href="/collection" className="cs-btn cs-btn-ghost cs-btn-lg">In your collection</Link>
+          )}
+          {cta.kind === "none" && (
+            <Link href="/marketplace" className="cs-btn cs-btn-ghost cs-btn-lg">Browse marketplace</Link>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-// Keep the band vocabulary validated against the schema at module load.
-ConditionBandSchema.options.forEach((b) => {
-  if (!BAND_ORDER.includes(b)) throw new Error(`Unhandled condition band: ${b}`);
-});

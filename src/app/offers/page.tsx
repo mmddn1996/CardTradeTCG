@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { DeltaBadge } from "@/components/offer-builder";
-import { formatAud } from "@/lib/pricing";
+import { DeltaBadge, StatePill } from "@/components/ui";
+import { csAud } from "@/lib/format";
+import { IconChevron } from "@/components/icons";
 import { getCurrentUser } from "@/lib/queries";
 import { listOffersForUser, type OfferSummary } from "@/lib/offers";
+import { handleOf, initials } from "@/lib/display";
 
 export const metadata = { title: "Offers — CardSwap" };
 
@@ -11,103 +13,55 @@ export default async function OffersPage() {
   const { incoming, outgoing, concluded } = await listOffersForUser(user.id);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Offers</h1>
-        <p className="text-sm text-muted">
-          Your trades in progress — incoming proposals, offers you&apos;ve sent,
-          and past deals.
-        </p>
+    <div>
+      <div className="cs-page-head">
+        <div className="cs-eyebrow">Offers</div>
+        <h1 className="cs-h1" style={{ fontSize: 30 }}>Your trades</h1>
       </div>
 
-      <Section title="Incoming" empty="No offers awaiting your response.">
-        {incoming.map((o) => (
-          <OfferRow key={o.id} o={o} />
-        ))}
-      </Section>
-      <Section title="Sent" empty="You haven't sent any open offers.">
-        {outgoing.map((o) => (
-          <OfferRow key={o.id} o={o} />
-        ))}
-      </Section>
-      <Section title="History" empty="No concluded trades yet.">
-        {concluded.map((o) => (
-          <OfferRow key={o.id} o={o} />
-        ))}
-      </Section>
+      <Section title={`Incoming${incoming.length ? ` · ${incoming.length}` : ""}`} rows={incoming} empty="No offers awaiting your response." />
+      <Section title="Sent" rows={outgoing} empty="You haven't sent any open offers." />
+      <Section title="History" rows={concluded} empty="No concluded trades yet." />
     </div>
   );
 }
 
-function Section({
-  title,
-  empty,
-  children,
-}: {
-  title: string;
-  empty: string;
-  children: React.ReactNode;
-}) {
-  const items = Array.isArray(children) ? children : [children];
-  const has = items.some(Boolean) && items.length > 0;
+function Section({ title, rows, empty }: { title: string; rows: OfferSummary[]; empty: string }) {
   return (
-    <section>
-      <h2 className="font-medium mb-2">{title}</h2>
-      {has ? (
-        <ul className="space-y-2">{children}</ul>
+    <section style={{ marginBottom: 28 }}>
+      <h2 className="cs-section-title" style={{ marginBottom: 12 }}>{title}</h2>
+      {rows.length === 0 ? (
+        <p className="cs-muted" style={{ fontSize: 13 }}>{empty}</p>
       ) : (
-        <p className="text-sm text-muted rounded-xl border border-dashed border-border p-4">
-          {empty}
-        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {rows.map((o) => <OfferRow key={o.id} o={o} />)}
+        </div>
       )}
     </section>
   );
 }
 
 function OfferRow({ o }: { o: OfferSummary }) {
-  // From the viewer's perspective: incoming = they give the requested basket
-  // and receive the offered one; outgoing = the reverse.
-  const give = o.direction === "INCOMING" ? o.requestedValueCents : o.offeredValueCents;
-  const receive = o.direction === "INCOMING" ? o.offeredValueCents : o.requestedValueCents;
+  const incoming = o.direction === "INCOMING";
+  const give = incoming ? o.requestedValueCents : o.offeredValueCents;
+  const receive = incoming ? o.offeredValueCents : o.requestedValueCents;
+  const giveCount = incoming ? o.requestedCount : o.offeredCount;
+  const receiveCount = incoming ? o.offeredCount : o.requestedCount;
+  const handle = handleOf({ displayName: o.counterpartyName });
   return (
-    <li>
-      <Link
-        href={`/offers/${o.id}`}
-        className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-accent transition-colors"
-      >
-        <StatePill state={o.state} />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm">
-            {o.direction === "INCOMING" ? "From" : "To"}{" "}
-            <strong>{o.counterpartyName}</strong>
-          </div>
-          <div className="text-xs text-muted">
-            give {formatAud(give)} · receive {formatAud(receive)} ·{" "}
-            {o.offeredCount + o.requestedCount} cards
-          </div>
+    <Link href={`/offers/${o.id}`} className="cs-offrow">
+      <span className="cs-owner-dot">{initials(o.counterpartyName)}</span>
+      <div className="cs-offrow-main">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <strong>@{handle}</strong>
+          <StatePill state={o.state} />
         </div>
-        {o.state === "PENDING" && <DeltaBadge delta={receive - give} />}
-      </Link>
-    </li>
-  );
-}
-
-function StatePill({ state }: { state: string }) {
-  const map: Record<string, string> = {
-    PENDING: "bg-accent/15 text-accent",
-    COUNTERED: "bg-warning/15 text-warning",
-    ACCEPTED: "bg-positive/15 text-positive",
-    REJECTED: "bg-danger/15 text-danger",
-    CANCELLED: "bg-surface-2 text-muted",
-    EXPIRED: "bg-surface-2 text-muted",
-  };
-  return (
-    <span
-      className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-medium ${
-        map[state] ?? "bg-surface-2 text-muted"
-      }`}
-    >
-      {state}
-    </span>
+        <div className="cs-offrow-sub">
+          {giveCount} for {receiveCount} · gives {csAud(give)} ↔ {csAud(receive)}
+        </div>
+      </div>
+      {o.state === "PENDING" && <DeltaBadge give={give} receive={receive} size="sm" />}
+      <IconChevron style={{ width: 18, height: 18, color: "var(--ink-3)" }} />
+    </Link>
   );
 }

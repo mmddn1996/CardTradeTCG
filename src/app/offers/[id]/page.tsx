@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CardImage } from "@/components/card-image";
-import { DeltaBadge } from "@/components/offer-builder";
+import { CardArt, ConditionChip, DeltaBadge, StatePill } from "@/components/ui";
+import { csAud } from "@/lib/format";
+import { IconArrowDown, IconArrowLeft, IconArrowUp, IconCheckCircle, IconSwap } from "@/components/icons";
 import { OfferActions } from "@/components/offer-actions";
-import { formatAud } from "@/lib/pricing";
 import { getCurrentUser } from "@/lib/queries";
 import { getOfferDetail, type OfferItemView } from "@/lib/offers";
-import { OVERPAY_THRESHOLD } from "@/lib/value-rules";
+import { handleOf } from "@/lib/display";
 
 export default async function OfferDetailPage({
   params,
@@ -21,84 +21,62 @@ export default async function OfferDetailPage({
   const isInitiator = user.id === offer.initiator.id;
   const isParticipant = isResponder || isInitiator;
 
-  // From the viewer's perspective.
+  // "You give" / "You receive" baskets from the viewer's perspective.
+  const giveBasket = isResponder ? offer.requested : offer.offered;
+  const receiveBasket = isResponder ? offer.offered : offer.requested;
   const give = isResponder ? offer.requestedValueCents : offer.offeredValueCents;
   const receive = isResponder ? offer.offeredValueCents : offer.requestedValueCents;
-  const overpaying = give > receive * (1 + OVERPAY_THRESHOLD);
+  const counterparty = isResponder ? offer.initiator : offer.responder;
 
   return (
-    <div className="space-y-6">
-      <Link href="/offers" className="text-sm text-muted hover:text-foreground">
-        ← All offers
+    <div>
+      <Link href="/offers" className="cs-btn cs-btn-ghost cs-btn-sm" style={{ marginBottom: 18 }}>
+        <IconArrowLeft /> All offers
       </Link>
 
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-semibold">
-          Offer {isResponder ? `from ${offer.initiator.name}` : `to ${offer.responder.name}`}
-        </h1>
-        <span className="rounded px-2 py-1 text-xs font-medium bg-surface-2 border border-border">
-          {offer.state}
-        </span>
+      <div className="cs-offer-head">
+        <div>
+          <div className="cs-eyebrow">{offer.parentOfferId ? "Counter offer" : "Offer"}</div>
+          <h1 className="cs-h1" style={{ fontSize: 28 }}>
+            {isResponder ? "From" : "To"} @{handleOf({ displayName: counterparty.name })}
+          </h1>
+        </div>
+        <StatePill state={offer.state} />
+        {offer.parentOfferId && (
+          <Link href={`/offers/${offer.parentOfferId}`} className="cs-link" style={{ marginLeft: "auto" }}>
+            ↩ previous offer
+          </Link>
+        )}
       </div>
-
-      {offer.parentOfferId && (
-        <Link
-          href={`/offers/${offer.parentOfferId}`}
-          className="text-sm text-accent hover:underline"
-        >
-          ↩ This is a counter — view the previous offer
-        </Link>
-      )}
 
       {offer.state === "ACCEPTED" && (
-        <div className="rounded-xl border border-positive/40 bg-positive/10 p-4 text-sm">
-          ✓ Accepted — a trade was created and both baskets are now locked.
-          Postage &amp; settlement are coming soon.
+        <div className="cs-banner">
+          <IconCheckCircle />
+          <span><b>Accepted</b> — a trade was created and both baskets are locked. Postage &amp; settlement are coming soon.</span>
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-5">
-        <Basket
-          title={isResponder ? "You receive" : "You give"}
-          owner={offer.initiator.name}
-          items={offer.offered}
-          total={offer.offeredValueCents}
-        />
-        <Basket
-          title={isResponder ? "You give" : "You receive"}
-          owner={offer.responder.name}
-          items={offer.requested}
-          total={offer.requestedValueCents}
-        />
-      </div>
-
-      <div className="rounded-xl border border-border bg-surface p-4 flex items-center justify-between">
-        <div className="text-sm text-muted">
-          {isParticipant ? (
-            <>You give <strong className="text-foreground">{formatAud(give)}</strong> · receive{" "}
-            <strong className="text-foreground">{formatAud(receive)}</strong></>
-          ) : (
-            <>Offered {formatAud(offer.offeredValueCents)} · requested{" "}
-            {formatAud(offer.requestedValueCents)}</>
-          )}
+      <div className="cs-baskets">
+        <Basket title="You give" give items={giveBasket} total={give} />
+        <div className="cs-center-col">
+          <span className="cs-swap-icon"><IconSwap /></span>
+          {isParticipant && <DeltaBadge give={give} receive={receive} />}
+          <div className="cs-totals-mini"><span>You give</span><b>{csAud(give)}</b></div>
+          <div className="cs-totals-mini"><span>You receive</span><b>{csAud(receive)}</b></div>
         </div>
-        {isParticipant && <DeltaBadge delta={receive - give} />}
+        <Basket title="You receive" items={receiveBasket} total={receive} />
       </div>
 
       {offer.message && (
-        <p className="text-sm text-muted border-l-2 border-border pl-3">“{offer.message}”</p>
+        <p className="cs-muted" style={{ marginTop: 18, borderLeft: "2px solid var(--line)", paddingLeft: 12 }}>
+          “{offer.message}”
+        </p>
       )}
 
       {offer.state === "PENDING" && isParticipant && (
-        <>
-          {overpaying && (
-            <p className="text-sm text-warning">
-              Heads up: you&apos;d be giving more than 15% above what you receive.
-              You can still proceed — you&apos;ll just confirm on accept.
-            </p>
-          )}
+        <div style={{ marginTop: 22 }}>
           <OfferActions offerId={offer.id} role={isResponder ? "responder" : "initiator"} />
-        </>
+        </div>
       )}
     </div>
   );
@@ -106,36 +84,38 @@ export default async function OfferDetailPage({
 
 function Basket({
   title,
-  owner,
   items,
   total,
+  give,
 }: {
   title: string;
-  owner: string;
   items: OfferItemView[];
   total: number;
+  give?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-medium">{title}</h3>
-          <p className="text-xs text-muted">{owner}&apos;s cards</p>
+    <div className={`cs-basket ${give ? "cs-basket-give" : "cs-basket-receive"}`}>
+      <div className="cs-basket-head">
+        <div className="cs-basket-title">
+          <span className="dir">{give ? <IconArrowUp /> : <IconArrowDown />}</span>
+          {title}
         </div>
-        <span className="text-sm font-semibold">{formatAud(total)}</span>
+        <span className="cs-basket-total">{csAud(total)}</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {items.map((c) => (
-          <div key={c.inventoryCardId} className="rounded-lg border border-border p-1.5">
-            <CardImage src={c.imageUrl} alt={c.name} className="w-full" />
-            <div className="mt-1 text-[11px] font-medium leading-tight truncate">
-              {c.name}
+      <div className="cs-basket-grid">
+        {items.length === 0 ? (
+          <div className="cs-basket-empty">No cards</div>
+        ) : (
+          items.map((c) => (
+            <div key={c.inventoryCardId}>
+              <CardArt src={c.imageUrl} alt={c.name} />
+              <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <ConditionChip cond={c.condition} />
+                <span className="cs-valamt" style={{ fontSize: 13, marginLeft: "auto" }}>{csAud(c.valueCents)}</span>
+              </div>
             </div>
-            <div className="text-[10px] text-muted">
-              {c.condition} · {formatAud(c.valueCents)}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

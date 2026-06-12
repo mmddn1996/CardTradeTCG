@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { AddResultForm } from "@/components/add-result-form";
 import { ManualAddForm } from "@/components/manual-add-form";
+import { IconCamera, IconSearch } from "@/components/icons";
 import { cardsInSet, listSets, lookupCards } from "@/lib/catalog";
 import { GAME_LABEL, GameSchema, type Game } from "@/lib/enums";
 
-export const metadata = { title: "Add a card — CardSwap" };
+export const metadata = { title: "Add cards — CardSwap" };
 
 const GAMES: Game[] = ["POKEMON", "ONE_PIECE"];
-
 const PLACEHOLDER: Record<Game, string> = {
   POKEMON: "Name, number, or id — e.g. Charizard, 4/102, base1-4",
   ONE_PIECE: "Name or card id — e.g. Luffy, OP01-001",
@@ -19,94 +19,78 @@ export default async function AddCardPage({
   searchParams: Promise<{ game?: string; q?: string; set?: string; view?: string }>;
 }) {
   const sp = await searchParams;
-  const game: Game = GameSchema.safeParse(sp.game).success
-    ? (sp.game as Game)
-    : "POKEMON";
+  const game: Game = GameSchema.safeParse(sp.game).success ? (sp.game as Game) : "POKEMON";
   const q = (sp.q ?? "").trim();
   const set = (sp.set ?? "").trim();
-  const browsing = sp.view === "sets" || !!set;
+  const view = sp.view ?? (set ? "sets" : "search");
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Add a card</h1>
-        <p className="text-sm text-muted">
-          Search by name or code, or browse a whole set. Prices attach
-          automatically — they&apos;re reference data only.
-        </p>
+    <div>
+      <div className="cs-page-head">
+        <div className="cs-eyebrow">Add cards</div>
+        <h1 className="cs-h1" style={{ fontSize: 30 }}>Digitise your collection</h1>
       </div>
 
-      {/* Game selector */}
-      <div className="flex gap-1">
-        {GAMES.map((g) => (
-          <Tab key={g} href={`/add?game=${g}${browsing ? "&view=sets" : ""}`} active={g === game}>
-            {GAME_LABEL[g]}
-          </Tab>
-        ))}
+      <div className="cs-searchbar">
+        <div className="cs-filterchips">
+          {GAMES.map((g) => (
+            <Link key={g} href={`/add?game=${g}${view === "sets" ? "&view=sets" : view === "scan" ? "&view=scan" : ""}`}
+              className={`cs-fchip${g === game ? " on" : ""}`}>
+              {GAME_LABEL[g]}
+            </Link>
+          ))}
+        </div>
+        <div className="cs-seg" style={{ marginLeft: "auto" }}>
+          <Link href={`/add?game=${game}`} className={view === "search" ? "on" : ""}>Search by name</Link>
+          <Link href={`/add?game=${game}&view=sets`} className={view === "sets" ? "on" : ""}>Browse sets</Link>
+          <Link href={`/add?game=${game}&view=scan`} className={view === "scan" ? "on" : ""}>Scan (soon)</Link>
+        </div>
       </div>
 
-      {/* Mode toggle */}
-      <div className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5 text-sm">
-        <Toggle href={`/add?game=${game}`} active={!browsing}>
-          Search
-        </Toggle>
-        <Toggle href={`/add?game=${game}&view=sets`} active={browsing}>
-          Browse sets
-        </Toggle>
-      </div>
-
-      {browsing ? (
-        set ? (
-          <SetCards game={game} set={set} />
-        ) : (
-          <SetList game={game} />
-        )
+      {view === "scan" ? (
+        <div className="cs-empty">
+          <div className="cs-empty-icon"><IconCamera /></div>
+          <h3>Card scanning is coming soon</h3>
+          <p>Point your phone at a card to add it instantly. For now, search or browse sets.</p>
+        </div>
+      ) : view === "sets" ? (
+        set ? <SetCards game={game} set={set} /> : <SetList game={game} />
       ) : (
-        <SearchView game={game} q={q} />
+        <SearchView game={game} q={q} placeholder={PLACEHOLDER[game]} />
       )}
 
-      <p className="text-xs text-muted">
-        Looking for the review queue?{" "}
-        <Link href="/catalog-gaps" className="text-accent hover:underline">
-          Catalog gaps
-        </Link>
+      <p className="cs-muted" style={{ fontSize: 12, marginTop: 24 }}>
+        Review queue: <Link href="/catalog-gaps" className="cs-link">Catalog gaps</Link>
       </p>
     </div>
   );
 }
 
-async function SearchView({ game, q }: { game: Game; q: string }) {
+async function SearchView({ game, q, placeholder }: { game: Game; q: string; placeholder: string }) {
   const results = q ? await lookupCards(game, q) : [];
   return (
     <>
-      <form method="get" className="flex gap-2">
+      <form method="get" className="cs-searchbar">
         <input type="hidden" name="game" value={game} />
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder={PLACEHOLDER[game]}
-          className="flex-1 rounded-lg bg-surface-2 border border-border px-3 py-2 text-sm text-foreground"
-        />
-        <button type="submit" className="rounded-lg bg-accent-strong px-4 py-2 text-sm font-medium">
-          Search
-        </button>
+        <div className="cs-search">
+          <IconSearch />
+          <input className="cs-input" name="q" defaultValue={q} placeholder={placeholder} />
+        </div>
+        <button type="submit" className="cs-btn cs-btn-primary">Search</button>
       </form>
-
       {q && (
-        <section className="space-y-3">
-          <p className="text-xs text-muted">
+        <>
+          <p className="cs-muted" style={{ fontSize: 12, marginBottom: 14 }}>
             {results.length} result{results.length === 1 ? "" : "s"} for “{q}”
           </p>
           {results.length > 0 ? (
-            <div className="grid sm:grid-cols-2 gap-3">
-              {results.map((r) => (
-                <AddResultForm key={r.externalId} card={r} />
-              ))}
+            <div className="cs-grid cs-grid-lg">
+              {results.map((r) => <AddResultForm key={r.externalId} card={r} />)}
             </div>
           ) : (
             <ManualAddForm game={game} defaultQuery={q} />
           )}
-        </section>
+        </>
       )}
     </>
   );
@@ -116,23 +100,18 @@ async function SetList({ game }: { game: Game }) {
   const sets = await listSets(game);
   if (sets.length === 0) {
     return (
-      <p className="text-sm text-muted rounded-xl border border-dashed border-border p-6 text-center">
-        No sets available to browse{" "}
-        {game === "ONE_PIECE" ? "(needs live mode + apitcg)" : ""}. Try search
-        instead.
-      </p>
+      <div className="cs-empty">
+        <h3>No sets to browse</h3>
+        <p>{game === "ONE_PIECE" ? "Needs live mode + apitcg." : "Try search instead."}</p>
+      </div>
     );
   }
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    <div className="cs-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(190px,1fr))" }}>
       {sets.map((s) => (
-        <Link
-          key={s.code}
-          href={`/add?game=${game}&set=${encodeURIComponent(s.code)}`}
-          className="rounded-xl border border-border bg-surface px-4 py-3 hover:border-accent transition-colors"
-        >
-          <div className="font-medium text-sm leading-tight">{s.name}</div>
-          <div className="text-[11px] text-muted">{s.code}</div>
+        <Link key={s.code} href={`/add?game=${game}&set=${encodeURIComponent(s.code)}`} className="cs-panel" style={{ padding: "16px 18px" }}>
+          <div style={{ fontWeight: 650, fontSize: 14 }}>{s.name}</div>
+          <div className="cs-muted" style={{ fontSize: 11 }}>{s.code}</div>
         </Link>
       ))}
     </div>
@@ -142,50 +121,18 @@ async function SetList({ game }: { game: Game }) {
 async function SetCards({ game, set }: { game: Game; set: string }) {
   const cards = await cardsInSet(game, set);
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted">
-          {cards.length} card{cards.length === 1 ? "" : "s"} in {set}
-        </p>
-        <Link href={`/add?game=${game}&view=sets`} className="text-xs text-accent hover:underline">
-          ← All sets
-        </Link>
+    <>
+      <div className="cs-section-head">
+        <p className="cs-muted" style={{ fontSize: 12 }}>{cards.length} card{cards.length === 1 ? "" : "s"} in {set}</p>
+        <Link href={`/add?game=${game}&view=sets`} className="cs-link">← All sets</Link>
       </div>
       {cards.length > 0 ? (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {cards.map((r) => (
-            <AddResultForm key={r.externalId} card={r} />
-          ))}
+        <div className="cs-grid cs-grid-lg">
+          {cards.map((r) => <AddResultForm key={r.externalId} card={r} />)}
         </div>
       ) : (
-        <p className="text-sm text-muted">No cards found for this set.</p>
+        <p className="cs-muted">No cards found for this set.</p>
       )}
-    </section>
-  );
-}
-
-function Tab({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className={`px-3 py-1.5 rounded-md text-sm ${
-        active ? "bg-surface-2 text-foreground" : "text-muted hover:text-foreground"
-      }`}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function Toggle({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className={`px-3 py-1 rounded-md ${
-        active ? "bg-accent-strong text-white" : "text-muted hover:text-foreground"
-      }`}
-    >
-      {children}
-    </Link>
+    </>
   );
 }

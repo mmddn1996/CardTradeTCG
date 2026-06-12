@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OfferBuilder } from "@/components/offer-builder";
+import { IconArrowLeft } from "@/components/icons";
 import { getCurrentUser } from "@/lib/queries";
 import { getBuilderData, getOfferDetail, type SelectableCard } from "@/lib/offers";
+import { handleOf } from "@/lib/display";
 
 export const metadata = { title: "Counter-offer — CardSwap" };
 
@@ -46,22 +48,20 @@ export default async function CounterPage({
   const theirCards = dedupe([...theirOfferItems.map(strip), ...builder.theirCards]);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <Link href={`/offers/${id}`} className="text-sm text-muted hover:text-foreground">
-          ← Back to offer
-        </Link>
-        <h1 className="text-2xl font-semibold mt-1">
-          Counter to {newResponder.name}
-        </h1>
-        <p className="text-sm text-muted">
-          Adjust either basket — add or remove cards, including pulling more of
-          their listed cards.
-        </p>
+    <div>
+      <Link href={`/offers/${id}`} className="cs-btn cs-btn-ghost cs-btn-sm" style={{ marginBottom: 18 }}>
+        <IconArrowLeft /> Back to offer
+      </Link>
+      <div className="cs-offer-head">
+        <div>
+          <div className="cs-eyebrow">Counter offer</div>
+          <h1 className="cs-h1" style={{ fontSize: 28 }}>Adjust the trade</h1>
+        </div>
+        <span className="cs-trust-chip" style={{ marginLeft: "auto" }}>with @{handleOf({ displayName: newResponder.name })}</span>
       </div>
       <OfferBuilder
         responderId={newResponder.id}
-        responderName={newResponder.name}
+        responderHandle={handleOf({ displayName: newResponder.name })}
         yourCards={yourCards}
         theirCards={theirCards}
         initialOffered={myOfferItems.map((i) => i.inventoryCardId)}
@@ -84,9 +84,5 @@ function dedupe(cards: SelectableCard[]): SelectableCard[] {
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted text-sm">
-      {children}
-    </div>
-  );
+  return <div className="cs-empty"><h3>{children}</h3></div>;
 }

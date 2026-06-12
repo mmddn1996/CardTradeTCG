@@ -1,77 +1,109 @@
 import Link from "next/link";
-import { CardImage } from "@/components/card-image";
-import { GameBadge } from "@/components/badges";
-import { ValueBadge } from "@/components/value-badge";
+import { CardTile } from "@/components/card-tile";
+import { IconSearch } from "@/components/icons";
 import { getCurrentUser, getMarketplaceListings } from "@/lib/queries";
 import { getSoftLockedInventoryIds } from "@/lib/offers";
+import { handleOf, initials } from "@/lib/display";
 
 export const metadata = { title: "Marketplace — CardSwap" };
 
-export default async function MarketplacePage() {
+const GAME_FILTERS = [
+  ["", "All games"],
+  ["POKEMON", "Pokémon TCG"],
+  ["ONE_PIECE", "One Piece"],
+] as const;
+
+export default async function MarketplacePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ game?: string; q?: string }>;
+}) {
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim().toLowerCase();
   const [listings, user, softLocked] = await Promise.all([
     getMarketplaceListings(),
     getCurrentUser(),
     getSoftLockedInventoryIds(),
   ]);
 
+  const filtered = listings.filter((l) => {
+    if (!l.inventoryCard) return false;
+    const cc = l.inventoryCard.catalogCard;
+    if (sp.game && cc.game !== sp.game) return false;
+    if (q && !`${cc.name} ${cc.set} ${l.user.displayName}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const qs = (game: string) => {
+    const p = new URLSearchParams();
+    if (game) p.set("game", game);
+    if (sp.q) p.set("q", sp.q);
+    const s = p.toString();
+    return s ? `/marketplace?${s}` : "/marketplace";
+  };
+
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Marketplace</h1>
-        <p className="text-sm text-muted">
-          Cards listed as available to trade (HAVE). Tap “Make offer” to start a
-          card-for-card negotiation.
-        </p>
+    <div>
+      <div className="cs-page-head">
+        <div className="cs-eyebrow">Marketplace</div>
+        <h1 className="cs-h1" style={{ fontSize: 30 }}>Cards listed to trade</h1>
       </div>
 
-      {listings.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted text-sm">
-          No cards listed for trade yet.
+      <form method="get" className="cs-searchbar">
+        <div className="cs-search">
+          <IconSearch />
+          <input className="cs-input" name="q" defaultValue={sp.q ?? ""} placeholder="Search cards, sets, owners…" />
+          {sp.game && <input type="hidden" name="game" value={sp.game} />}
         </div>
+        <div className="cs-filterchips">
+          {GAME_FILTERS.map(([val, label]) => (
+            <Link key={val} href={qs(val)} className={`cs-fchip${(sp.game ?? "") === val ? " on" : ""}`}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </form>
+
+      {filtered.length === 0 ? (
+        <div className="cs-empty"><h3>No cards match</h3><p>Try a different search or filter.</p></div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {listings.map((l) => {
-            if (!l.inventoryCard) return null;
-            const cc = l.inventoryCard.catalogCard;
+        <div className="cs-grid cs-grid-lg">
+          {filtered.map((l) => {
+            const inv = l.inventoryCard!;
+            const cc = inv.catalogCard;
             const mine = l.userId === user.id;
-            const locked = softLocked.has(l.inventoryCard.id);
+            const locked = softLocked.has(inv.id);
             return (
-              <div
+              <CardTile
                 key={l.id}
-                className="flex flex-col rounded-xl border border-border bg-surface p-3"
-              >
-                <Link href={`/cards/${cc.id}`}>
-                  <CardImage src={cc.imageUrl} alt={cc.name} className="w-full" />
-                </Link>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <GameBadge game={cc.game} />
-                  {locked && (
-                    <span className="text-[10px] rounded bg-warning/15 text-warning px-1.5 py-0.5">
-                      in an active offer
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 font-medium leading-tight truncate">{cc.name}</div>
-                <div className="text-xs text-muted">
-                  {cc.set} · {cc.number}
-                </div>
-                <div className="mt-2 flex items-end justify-between gap-2">
-                  <ValueBadge value={l.value} size="sm" />
-                  <span className="text-[11px] text-muted">{l.user.displayName}</span>
-                </div>
-                <div className="mt-2">
-                  {mine ? (
-                    <span className="text-[11px] text-muted">Your card</span>
+                card={{
+                  catalogId: cc.id,
+                  name: cc.name,
+                  game: cc.game,
+                  set: cc.set,
+                  number: cc.number,
+                  imageUrl: cc.imageUrl,
+                  condition: inv.condition,
+                  valueCents: l.value?.valueCents ?? null,
+                  asOf: l.value?.capturedAt ?? null,
+                  softLocked: locked,
+                  footer: mine ? (
+                    <span className="cs-mine-flag">Your listing</span>
                   ) : (
-                    <Link
-                      href={`/offers/new?want=${l.inventoryCard.id}`}
-                      className="inline-block w-full text-center rounded-lg bg-accent-strong px-3 py-1.5 text-xs font-medium"
-                    >
+                    <span className="cs-owner">
+                      <span className="cs-owner-dot">{initials(l.user.displayName)}</span>
+                      @{handleOf(l.user)}
+                    </span>
+                  ),
+                  action: mine ? undefined : locked ? (
+                    <button className="cs-btn cs-btn-sm cs-btn-block" disabled>In an active offer</button>
+                  ) : (
+                    <Link href={`/offers/new?want=${inv.id}`} className="cs-btn cs-btn-primary cs-btn-sm cs-btn-block">
                       Make offer
                     </Link>
-                  )}
-                </div>
-              </div>
+                  ),
+                }}
+              />
             );
           })}
         </div>

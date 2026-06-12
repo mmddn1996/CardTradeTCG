@@ -1,54 +1,94 @@
 import Link from "next/link";
 import { CardTile } from "@/components/card-tile";
+import { IconAdd, IconLayers } from "@/components/icons";
 import { getCurrentUser, getInventoryForUser } from "@/lib/queries";
 
 export const metadata = { title: "My Collection — CardSwap" };
 
-export default async function CollectionPage() {
+const GAME_FILTERS = [
+  ["", "All games"],
+  ["POKEMON", "Pokémon TCG"],
+  ["ONE_PIECE", "One Piece"],
+] as const;
+const STATUS_FILTERS = [
+  ["", "All"],
+  ["LISTED", "Listed"],
+  ["VAULT", "In vault"],
+] as const;
+
+export default async function CollectionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ game?: string; status?: string }>;
+}) {
+  const sp = await searchParams;
   const user = await getCurrentUser();
-  const inventory = await getInventoryForUser(user.id);
+  const all = await getInventoryForUser(user.id);
+  const items = all.filter(
+    (i) =>
+      (!sp.game || i.catalogCard.game === sp.game) &&
+      (!sp.status || i.status === sp.status),
+  );
+
+  const qs = (over: Record<string, string>) => {
+    const p = new URLSearchParams();
+    const g = over.game ?? sp.game ?? "";
+    const s = over.status ?? sp.status ?? "";
+    if (g) p.set("game", g);
+    if (s) p.set("status", s);
+    const str = p.toString();
+    return str ? `/collection?${str}` : "/collection";
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="cs-page-head" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <h1 className="text-2xl font-semibold">My Collection</h1>
-          <p className="text-sm text-muted">
-            {inventory.length} card{inventory.length === 1 ? "" : "s"} digitised
-          </p>
+          <div className="cs-eyebrow">My Collection</div>
+          <h1 className="cs-h1" style={{ fontSize: 30 }}>{all.length} card{all.length === 1 ? "" : "s"}</h1>
         </div>
-        <Link
-          href="/add"
-          className="rounded-lg bg-accent-strong px-3 py-2 text-sm font-medium"
-        >
-          + Add card
-        </Link>
+        <Link href="/add" className="cs-btn cs-btn-primary"><IconAdd /> Add card</Link>
       </div>
 
-      {inventory.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted text-sm">
-          No cards yet.{" "}
-          <Link href="/" className="text-accent hover:underline">
-            Back to dashboard
-          </Link>
+      <div className="cs-searchbar">
+        <div className="cs-filterchips">
+          {GAME_FILTERS.map(([val, label]) => (
+            <Link key={val} href={qs({ game: val })} className={`cs-fchip${(sp.game ?? "") === val ? " on" : ""}`}>
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="cs-seg" style={{ marginLeft: "auto" }}>
+          {STATUS_FILTERS.map(([val, label]) => (
+            <Link key={val} href={qs({ status: val })} className={(sp.status ?? "") === val ? "on" : ""}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="cs-empty">
+          <div className="cs-empty-icon"><IconLayers /></div>
+          <h3>Nothing here yet</h3>
+          <p>Head to “Add cards” to build your collection.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {inventory.map((item) => (
+        <div className="cs-grid">
+          {items.map((item) => (
             <CardTile
               key={item.id}
               card={{
                 catalogId: item.catalogCardId,
                 name: item.catalogCard.name,
+                game: item.catalogCard.game,
                 set: item.catalogCard.set,
                 number: item.catalogCard.number,
-                game: item.catalogCard.game,
-                variant: item.catalogCard.variant,
-                finish: item.catalogCard.finish,
                 imageUrl: item.catalogCard.imageUrl,
                 condition: item.condition,
-                status: item.status,
-                value: item.value,
+                valueCents: item.value?.valueCents ?? null,
+                asOf: item.value?.capturedAt ?? null,
+                state: item.status,
               }}
             />
           ))}

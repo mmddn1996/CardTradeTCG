@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Nav } from "@/components/nav";
+import { MobileTabBar, Nav } from "@/components/nav";
 import { getAllUsers, getCurrentUser } from "@/lib/queries";
 import { countIncomingOffers } from "@/lib/offers";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b1020",
+  themeColor: "#090e1a",
   width: "device-width",
   initialScale: 1,
 };
@@ -27,25 +27,31 @@ export default async function RootLayout({
     getCurrentUser(),
   ]);
   const incomingOffers = await countIncomingOffers(currentUser.id);
+  const navUsers = users.map((u) => ({
+    id: u.id,
+    displayName: u.displayName,
+    trustTier: u.trustTier,
+  }));
 
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
-        <Nav
-          users={users.map((u) => ({
-            id: u.id,
-            displayName: u.displayName,
-            trustTier: u.trustTier,
-          }))}
-          currentUserId={currentUser.id}
-          incomingOffers={incomingOffers}
+    <html lang="en" data-theme="vault">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:wght@400;500;600&display=swap"
+          rel="stylesheet"
         />
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-6">
-          {children}
-        </main>
-        <footer className="border-t border-border text-muted text-xs text-center py-4">
-          CardSwap · MVP · Pokémon TCG + One Piece · cards-for-cards only
-        </footer>
+      </head>
+      <body>
+        <div className="cs-app">
+          <Nav users={navUsers} currentUserId={currentUser.id} incomingOffers={incomingOffers} />
+          <main className="cs-main">{children}</main>
+          <footer className="cs-foot">
+            CardSwap · Pokémon TCG + One Piece · cards-for-cards only
+          </footer>
+          <MobileTabBar incomingOffers={incomingOffers} />
+        </div>
       </body>
     </html>
   );
