@@ -4,7 +4,10 @@
   "description": "Pure card-for-card TCG trading — Pokémon & One Piece.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1020",
-  "theme_color": "#0b1020",
-  "icons": []
+  "background_color": "#090e1a",
+  "theme_color": "#090e1a",
+  "icons": [
+    { "src": "/app-icons/cardswap-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/app-icons/cardswap-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
 }

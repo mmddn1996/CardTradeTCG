@@ -12,7 +12,6 @@ import {
   IconMarket,
   IconOffers,
   IconSearch,
-  IconSwap,
 } from "@/components/icons";
 
 const NAV = [
@@ -43,10 +42,27 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+// CardSwap brand mark — two interlocking cards on a teal tile (from the brand pack).
+function CardSwapMark({ size = 30 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" role="img" aria-label="CardSwap" style={{ display: "block" }}>
+      <rect width="512" height="512" rx="114" fill="#0FB5A8" />
+      <g transform="translate(256,256)">
+        <rect x="-118" y="-86" width="150" height="210" rx="22" transform="rotate(-12 -43 19)" fill="#F5F7F8" />
+        <rect x="-32" y="-86" width="150" height="210" rx="22" transform="rotate(12 43 19)" fill="#FF6B5C" />
+        <g strokeWidth="13" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M-44 22 L44 22 M-44 22 L-18 -4 M-44 22 L-18 48" stroke="#0FB5A8" />
+          <path d="M44 -22 L-44 -22 M44 -22 L18 -48 M44 -22 L18 4" stroke="#F5F7F8" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 function Brand() {
   return (
     <Link href="/" className="cs-brand">
-      <span className="cs-brand-mark"><IconSwap /></span>
+      <CardSwapMark />
       <span><b>Card</b><span className="cs-brand-sub">Swap</span></span>
     </Link>
   );
