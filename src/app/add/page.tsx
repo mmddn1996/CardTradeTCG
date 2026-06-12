@@ -101,8 +101,12 @@ async function SetList({ game }: { game: Game }) {
   if (sets.length === 0) {
     return (
       <div className="cs-empty">
-        <h3>No sets to browse</h3>
-        <p>{game === "ONE_PIECE" ? "Needs live mode + apitcg." : "Try search instead."}</p>
+        <h3>Set browsing isn&apos;t available here</h3>
+        <p>
+          {game === "ONE_PIECE"
+            ? "The One Piece data source has no set index yet — search by name or card code instead."
+            : "Couldn’t load sets — try search instead."}
+        </p>
       </div>
     );
   }

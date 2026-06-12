@@ -80,34 +80,18 @@ export class OnePieceProvider implements CatalogProvider {
   }
 
   async lookupBySet(setCode: string): Promise<CatalogCardResult[]> {
-    const code = setCode.trim();
-    for (const param of ["set", "code"]) {
-      const cards = await this.fetchCards(
-        `${param}=${encodeURIComponent(code)}&limit=300`,
-      );
-      // Guard against an ignored param returning unrelated cards: keep only
-      // those whose set name carries this set code (e.g. "… [OP01]").
-      const matched = cards.filter((c) =>
-        setName(c).toUpperCase().includes(code.toUpperCase()),
-      );
-      if (matched.length > 0) return matched.map(toResult);
-    }
+    // apitcg has no card→set-code join (verified: both ?code= and ?set= return
+    // 0), and paginating the whole DB to match set.name is too expensive at
+    // request time. Set browsing is therefore unsupported for live One Piece —
+    // see listSets(). Search by name/code instead.
+    void setCode;
     return [];
   }
 
   async listSets(): Promise<SetInfo[]> {
-    const res = await fetchJson<{ data?: { id?: string; code?: string; name?: string }[] }>(
-      `${BASE}/sets`,
-      { headers: this.headers() },
-    );
-    const arr = Array.isArray(res?.data) ? res!.data! : [];
-    return arr
-      .map((s) => ({
-        code: s.code ?? s.id ?? "",
-        name: s.name ?? s.code ?? s.id ?? "",
-        game: "ONE_PIECE" as const,
-      }))
-      .filter((s) => s.code);
+    // Disabled for live One Piece (see lookupBySet). Returning [] makes the Add
+    // screen show "set browsing isn't available" rather than a dead-end list.
+    return [];
   }
 }
 
