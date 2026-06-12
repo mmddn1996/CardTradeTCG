@@ -20,6 +20,7 @@ model User {
   region               String   @default("AU")
   trustTier               String @default("BASIC") // BASIC | L1 | L2 | L3 | X1
   kycStatus               String @default("NONE")  // NONE | PENDING | VERIFIED
+  entityType              String @default("TRADER") // PLAYER | TRADER | VENDOR
   completedTradeValueCents Int   @default(0)
   ratingAvg               Float?
   createdAt            DateTime @default(now())

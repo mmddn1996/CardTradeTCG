@@ -148,6 +148,7 @@ export interface OfferSummary {
   state: string;
   direction: "INCOMING" | "OUTGOING";
   counterpartyName: string;
+  counterpartyId: string;
   offeredValueCents: number;
   requestedValueCents: number;
   offeredCount: number;
@@ -176,6 +177,7 @@ function summarize(
     state: offer.state,
     direction: outgoing ? "OUTGOING" : "INCOMING",
     counterpartyName: outgoing ? offer.responder.displayName : offer.initiator.displayName,
+    counterpartyId: outgoing ? offer.responderId : offer.initiatorId,
     offeredValueCents: offer.offeredValueCents,
     requestedValueCents: offer.requestedValueCents,
     offeredCount: offer.items.filter((i) => i.side === "OFFERED").length,

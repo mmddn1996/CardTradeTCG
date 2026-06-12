@@ -48,7 +48,7 @@ export default async function CardDetailPage({
             <GameChip game={card.game} />
             {card.finish && <span className="cs-metaitem">{card.finish}</span>}
             {cta.kind === "offer" && (
-              <span className="cs-metaitem">@{handleOf(cta.owner)}</span>
+              <Link href={`/u/${cta.owner.id}`} className="cs-metaitem">@{handleOf(cta.owner)}</Link>
             )}
           </div>
           <h1 className="cs-detail-name">{card.name}</h1>

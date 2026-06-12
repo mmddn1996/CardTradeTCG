@@ -29,6 +29,15 @@ export const CONDITION_LABEL: Record<ConditionBand, string> = {
   PO: "Poor",
 };
 
+/** Profile entity type — how a member identifies (set at signup). */
+export const EntityTypeSchema = z.enum(["PLAYER", "TRADER", "VENDOR"]);
+export type EntityType = z.infer<typeof EntityTypeSchema>;
+export const ENTITY_LABEL: Record<EntityType, string> = {
+  PLAYER: "Player",
+  TRADER: "Trader",
+  VENDOR: "Vendor",
+};
+
 /** Trust tiers (Spec §6). Limits enforced at offer acceptance in Stage 3+. */
 export const TrustTierSchema = z.enum(["BASIC", "L1", "L2", "L3", "X1"]);
 export type TrustTier = z.infer<typeof TrustTierSchema>;

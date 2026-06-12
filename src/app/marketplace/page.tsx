@@ -90,10 +90,10 @@ export default async function MarketplacePage({
                   footer: mine ? (
                     <span className="cs-mine-flag">Your listing</span>
                   ) : (
-                    <span className="cs-owner">
+                    <Link href={`/u/${l.userId}`} className="cs-owner">
                       <span className="cs-owner-dot">{initials(l.user.displayName)}</span>
                       @{handleOf(l.user)}
-                    </span>
+                    </Link>
                   ),
                   action: mine ? undefined : locked ? (
                     <button className="cs-btn cs-btn-sm cs-btn-block" disabled>In an active offer</button>

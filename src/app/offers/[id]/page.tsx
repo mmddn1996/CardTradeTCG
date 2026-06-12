@@ -38,7 +38,10 @@ export default async function OfferDetailPage({
         <div>
           <div className="cs-eyebrow">{offer.parentOfferId ? "Counter offer" : "Offer"}</div>
           <h1 className="cs-h1" style={{ fontSize: 28 }}>
-            {isResponder ? "From" : "To"} @{handleOf({ displayName: counterparty.name })}
+            {isResponder ? "From" : "To"}{" "}
+            <Link href={`/u/${counterparty.id}`} style={{ color: "var(--accent)" }}>
+              @{handleOf({ displayName: counterparty.name })}
+            </Link>
           </h1>
         </div>
         <StatePill state={offer.state} />
