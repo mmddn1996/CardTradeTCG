@@ -9,6 +9,7 @@ export interface TileCard {
   set: string;
   number: string;
   imageUrl?: string | null;
+  cardType?: string | null;
   condition?: string | null;
   valueCents: number | null;
   asOf?: Date | null;
@@ -23,7 +24,7 @@ export function CardTile({ card }: { card: TileCard }) {
     <div className={`cs-tile cs-tile-data${card.softLocked ? " cs-tile-dim" : ""} cs-tile-click`}>
       <div className="cs-tile-artwrap">
         <Link href={`/cards/${card.catalogId}`}>
-          <CardArt src={card.imageUrl} alt={card.name} game={card.game} flip />
+          <CardArt src={card.imageUrl} alt={card.name} game={card.game} cardType={card.cardType} flip />
         </Link>
         {card.state && <div className="cs-tile-corner"><StatePill state={card.state} /></div>}
         {card.softLocked && (

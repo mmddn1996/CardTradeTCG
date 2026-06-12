@@ -83,6 +83,7 @@ export default async function MarketplacePage({
                   set: cc.set,
                   number: cc.number,
                   imageUrl: cc.imageUrl,
+                  cardType: cc.cardType,
                   condition: inv.condition,
                   valueCents: l.value?.valueCents ?? null,
                   asOf: l.value?.capturedAt ?? null,

@@ -85,6 +85,7 @@ export default async function CollectionPage({
                 set: item.catalogCard.set,
                 number: item.catalogCard.number,
                 imageUrl: item.catalogCard.imageUrl,
+                cardType: item.catalogCard.cardType,
                 condition: item.condition,
                 valueCents: item.value?.valueCents ?? null,
                 asOf: item.value?.capturedAt ?? null,

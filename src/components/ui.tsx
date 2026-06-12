@@ -15,18 +15,32 @@ const GAME_LABEL: Record<string, string> = {
 };
 
 /* ---------- real card image in the TCG-proportioned frame ---------- */
+/** Pick the card-back image by game + (One Piece) Leader type. Files live in
+ * /public/card-backs/; if a file is missing the CSS fallback back is shown. */
+export function cardBackSrc(game?: string, cardType?: string | null): string | null {
+  if (game === "POKEMON") return "/card-backs/POKE_Back.png";
+  if (game === "ONE_PIECE")
+    return /leader/i.test(cardType ?? "")
+      ? "/card-backs/OP_Back_Leader.png"
+      : "/card-backs/OP_Back_Standard.png";
+  return null;
+}
+
 export function CardArt({
   src,
   alt,
   game,
+  cardType,
   flip = false,
 }: {
   src?: string | null;
   alt: string;
   game?: string;
+  cardType?: string | null;
   flip?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  const [backFailed, setBackFailed] = useState(false);
   const resolved = src && src.startsWith("http")
     ? `/api/card-image?src=${encodeURIComponent(src)}`
     : src;
@@ -47,25 +61,33 @@ export function CardArt({
     );
   }
 
-  // Flip on hover — front (the art) rotates to a CSS-only, game-tinted back.
+  // Flip on hover — front (the art) rotates to the game's card back.
+  const backSrc = cardBackSrc(game, cardType);
   return (
     <div className="cs-cardbox">
       <div className="cs-card3d">
         <div className="cs-card3d-inner">
           <div className="cs-card3d-front">{face}</div>
-          <CardBack game={game} />
+          <div className="cs-card3d-back" aria-hidden="true">
+            {backSrc && !backFailed ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="cs-cardback-img" src={backSrc} alt="" onError={() => setBackFailed(true)} />
+            ) : (
+              <CardBackFallback game={game} />
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/** Original, game-tinted card back (no card IP) carrying the CardSwap mark. */
-function CardBack({ game }: { game?: string }) {
+/** CSS-only fallback back (shown until the real back image is added). */
+function CardBackFallback({ game }: { game?: string }) {
   const cls =
     game === "POKEMON" || game === "ONE_PIECE" ? `cs-cardback-${game}` : "cs-cardback-default";
   return (
-    <div className={`cs-card3d-back cs-cardback ${cls}`} aria-hidden="true">
+    <div className={`cs-cardback ${cls}`}>
       <div className="cs-cardback-inner">
         <svg viewBox="0 0 512 512" role="img" aria-label="CardSwap">
           <rect width="512" height="512" rx="114" fill="#0FB5A8" />

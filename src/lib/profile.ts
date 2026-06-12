@@ -186,6 +186,7 @@ export interface ProfileCard {
   set: string;
   number: string;
   imageUrl: string | null;
+  cardType: string | null;
   condition: string | null;
   valueCents: number | null;
   state?: string | null;
@@ -213,6 +214,7 @@ export async function getProfileInventory(
           set: cc.set,
           number: cc.number,
           imageUrl: cc.imageUrl,
+          cardType: cc.cardType,
           condition: null,
           valueCents: v?.valueCents ?? null,
         };
@@ -235,6 +237,7 @@ export async function getProfileInventory(
         set: i.catalogCard.set,
         number: i.catalogCard.number,
         imageUrl: i.catalogCard.imageUrl,
+        cardType: i.catalogCard.cardType,
         condition: i.condition,
         valueCents: v?.valueCents ?? null,
         state: i.status,

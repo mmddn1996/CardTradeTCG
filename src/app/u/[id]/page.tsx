@@ -110,6 +110,7 @@ async function InventoryView({ id, filter }: { id: string; filter: "have" | "wan
                 set: c.set,
                 number: c.number,
                 imageUrl: c.imageUrl,
+                cardType: c.cardType,
                 condition: c.condition,
                 valueCents: c.valueCents,
                 state: c.state ?? null,

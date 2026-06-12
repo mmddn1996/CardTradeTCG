@@ -119,7 +119,8 @@ a { color: inherit; text-decoration: none; }
 .cs-card3d-front { background: var(--surface-2); }
 .cs-card3d-front img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cs-card3d-back { transform: rotateY(180deg); }
-.cs-cardback { display: grid; place-items: center; }
+.cs-cardback-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cs-cardback { width: 100%; height: 100%; display: grid; place-items: center; }
 .cs-cardback-inner {
   width: 66%; aspect-ratio: 3 / 4; border-radius: 12px; display: grid; place-items: center;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
