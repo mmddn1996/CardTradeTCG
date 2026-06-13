@@ -51,7 +51,7 @@ export class JustTcgPricingProvider implements PricingProvider {
     // specific printing by collector number below.
     const query = cleanName(ref.name);
     const res = await fetchJson<{ data?: JtCard[] }>(
-      `${BASE}/cards?game=${slug}&q=${encodeURIComponent(query)}&limit=50`,
+      `${BASE}/cards?game=${slug}&q=${encodeURIComponent(query)}&limit=100`,
       { headers: this.headers() },
     );
     const cards = res?.data ?? [];

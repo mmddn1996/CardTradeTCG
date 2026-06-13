@@ -6,6 +6,7 @@ import { IconArrowLeft, IconInfo } from "@/components/icons";
 import { CONDITION_LABEL, type ConditionBand } from "@/lib/enums";
 import { getCardCta, getCatalogCard, getCurrentUser } from "@/lib/queries";
 import { handleOf, highlightKeywords } from "@/lib/display";
+import { refreshPriceAction } from "./actions";
 
 const BAND_ORDER: ConditionBand[] = ["NM", "LP", "PL", "PO"];
 
@@ -99,6 +100,12 @@ export default async function CardDetailPage({
               {primarySource ?? "—"}
               {asOf ? ` · as of ${new Date(asOf).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}` : ""}
             </div>
+            {byBand.size === 0 && (
+              <form action={refreshPriceAction} style={{ marginTop: 10 }}>
+                <input type="hidden" name="catalogCardId" value={card.id} />
+                <button type="submit" className="cs-btn cs-btn-sm">Refresh price</button>
+              </form>
+            )}
           </div>
 
           {cta.kind === "offer" && (
