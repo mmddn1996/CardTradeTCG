@@ -46,9 +46,10 @@ export class JustTcgPricingProvider implements PricingProvider {
 
   async getPrice(ref: PriceRef): Promise<PriceResult | null> {
     const slug = GAME_SLUG[ref.game];
-    // The code/number is the most selective query for One Piece; for Pokémon
-    // the name is more reliable, then we match on collector number.
-    const query = ref.game === "ONE_PIECE" ? ref.number : ref.name;
+    // JustTCG's `q` searches the card name, so query by name for both games
+    // (punctuation like "Monkey.D.Luffy" normalised to spaces), then match the
+    // specific printing by collector number below.
+    const query = cleanName(ref.name);
     const res = await fetchJson<{ data?: JtCard[] }>(
       `${BASE}/cards?game=${slug}&q=${encodeURIComponent(query)}&limit=50`,
       { headers: this.headers() },
@@ -145,4 +146,14 @@ function bandOf(condition?: string): ConditionBand | null {
 
 function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** Name suitable for a fuzzy `q` search: punctuation → spaces (so
+ * "Monkey.D.Luffy" → "Monkey D Luffy"); drop a "(Leader)" suffix. */
+function cleanName(name: string): string {
+  return name
+    .replace(/\(.*?\)/g, " ")
+    .replace(/[._]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

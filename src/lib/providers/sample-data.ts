@@ -60,7 +60,9 @@ function op(id: string, set: string, name: string, valueAudNM: number, descripti
     name,
     variant: e.variant ?? null,
     finish: e.finish ?? null,
-    imageUrl: null,
+    // Official card image (served through our /api/card-image proxy, which
+    // strips the Referer so the hotlink-protected host still loads).
+    imageUrl: `https://en.onepiece-cardgame.com/images/cardlist/card/${id}.png`,
     description,
     rarity: e.rarity ?? "R",
     cardType: e.cardType ?? "Character",

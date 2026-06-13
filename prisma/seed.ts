@@ -7,32 +7,32 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding CardSwap…");
 
-  // Catalog + price snapshots (one per condition band).
-  // Prisma disallows null in a compound-unique `where`, so find-or-create by
-  // the stable externalId instead of upserting on the natural key.
+  // Catalog + price snapshots (one per condition band). Find-or-create by the
+  // stable externalId; refresh the display fields on existing rows so a reseed
+  // picks up updated images / metadata.
   for (const c of SAMPLE_CARDS) {
-    const card =
-      (await prisma.catalogCard.findFirst({
-        where: { externalId: c.externalId },
-      })) ??
-      (await prisma.catalogCard.create({
-        data: {
-          externalId: c.externalId,
-          game: c.game,
-          set: c.set,
-          number: c.number,
-          name: c.name,
-          variant: c.variant ?? null,
-          finish: c.finish ?? null,
-          imageUrl: c.imageUrl ?? null,
-          description: c.description ?? null,
-          rarity: c.rarity ?? null,
-          cardType: c.cardType ?? null,
-          cost: c.cost ?? null,
-          power: c.power ?? null,
-          counter: c.counter ?? null,
-        },
-      }));
+    const display = {
+      set: c.set,
+      number: c.number,
+      name: c.name,
+      variant: c.variant ?? null,
+      finish: c.finish ?? null,
+      imageUrl: c.imageUrl ?? null,
+      description: c.description ?? null,
+      rarity: c.rarity ?? null,
+      cardType: c.cardType ?? null,
+      cost: c.cost ?? null,
+      power: c.power ?? null,
+      counter: c.counter ?? null,
+    };
+    const found = await prisma.catalogCard.findFirst({
+      where: { externalId: c.externalId },
+    });
+    const card = found
+      ? await prisma.catalogCard.update({ where: { id: found.id }, data: display })
+      : await prisma.catalogCard.create({
+          data: { externalId: c.externalId, game: c.game, ...display },
+        });
 
     const prices = pricesFromNM(dollarsToCents(c.valueAudNM));
     for (const [band, valueCents] of Object.entries(prices)) {
