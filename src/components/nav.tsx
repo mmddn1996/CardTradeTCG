@@ -61,7 +61,11 @@ function CardSwapMark({ size = 30 }: { size?: number }) {
 
 function Brand() {
   return (
-    <Link href="/" className="cs-brand">
+    <Link
+      href="/"
+      className="cs-brand"
+      onClick={() => window.dispatchEvent(new Event("cardswap:intro"))}
+    >
       <CardSwapMark />
       <span><b>Card</b><span className="cs-brand-sub">Swap</span></span>
     </Link>

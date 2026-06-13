@@ -437,6 +437,44 @@ a { color: inherit; text-decoration: none; }
 .cs-offrow-main { flex: 1; min-width: 0; }
 .cs-offrow-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
 
+/* ============================================================ INTRO ANIMATION ===== */
+.cs-intro { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; pointer-events: none; overflow: hidden; }
+.cs-intro::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 44%, color-mix(in oklab, #0FB5A8 22%, transparent), transparent 55%), var(--bg);
+  animation: cs-introBg .3s ease both; transition: opacity .6s ease;
+}
+.cs-intro.is-fly::before { opacity: 0; }
+@keyframes cs-introBg { from { opacity: 0; } to { opacity: 1; } }
+
+.cs-intro-logo {
+  display: flex; align-items: center; gap: 18px;
+  transition: transform .82s cubic-bezier(.66, 0, .2, 1), opacity .3s ease .52s;
+  will-change: transform, opacity;
+}
+.cs-intro.is-fly .cs-intro-logo { opacity: 0; }
+.cs-intro-mark { width: clamp(84px, 16vw, 116px); height: clamp(84px, 16vw, 116px);
+  filter: drop-shadow(0 14px 34px rgba(15, 181, 168, .4)); }
+.cs-intro-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em;
+  font-size: clamp(34px, 7vw, 56px); line-height: 1; animation: cs-introWord .5s ease .42s both; }
+.cs-intro-word b { color: var(--ink); }
+.cs-intro-word span { color: #0FB5A8; }
+
+.cs-mk-tile, .cs-mk-c1, .cs-mk-c2 { transform-box: fill-box; transform-origin: center; }
+.cs-mk-tile { animation: cs-mkTile .55s cubic-bezier(.2, .8, .2, 1.1) both; }
+.cs-mk-c1 { animation: cs-mkC1 .66s cubic-bezier(.2, .7, .2, 1) .12s both; }
+.cs-mk-c2 { animation: cs-mkC2 .66s cubic-bezier(.2, .7, .2, 1) .12s both; }
+.cs-mk-arrows { animation: cs-introFade .4s ease .52s both; }
+@keyframes cs-mkTile { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes cs-mkC1 { from { opacity: 0; transform: translate(-185px, 70px) rotate(-26deg); } to { opacity: 1; transform: translate(0, 0) rotate(0); } }
+@keyframes cs-mkC2 { from { opacity: 0; transform: translate(185px, 70px) rotate(26deg); } to { opacity: 1; transform: translate(0, 0) rotate(0); } }
+@keyframes cs-introFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cs-introWord { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-intro { display: none; }
+}
+
 /* ============================================================ RESPONSIVE ===== */
 @media (max-width: 920px) {
   .cs-topnav { display: none; }

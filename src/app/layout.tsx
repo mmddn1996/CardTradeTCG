@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { MobileTabBar, Nav } from "@/components/nav";
+import { IntroAnimation } from "@/components/intro-animation";
 import { getAllUsers, getCurrentUser } from "@/lib/queries";
 import { countIncomingOffers } from "@/lib/offers";
 
@@ -50,6 +51,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <IntroAnimation />
         <div className="cs-app">
           <Nav users={navUsers} currentUserId={currentUser.id} incomingOffers={incomingOffers} />
           <main className="cs-main">{children}</main>
