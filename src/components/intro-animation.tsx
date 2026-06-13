@@ -55,6 +55,8 @@ export function IntroAnimation() {
         } else {
           setFlyTransform("translate(-44vw, -42vh) scale(0.22)");
         }
+        // Drop the pre-paint cover so the page reveals as the logo flies off.
+        document.documentElement.classList.remove("cs-intro-cover");
         setPhase("fly");
       }, 1050);
       return () => clearTimeout(t);

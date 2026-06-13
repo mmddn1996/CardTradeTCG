@@ -43,6 +43,16 @@ export default async function RootLayout({
               "try{var t=localStorage.getItem('cs-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}",
           }}
         />
+        {/* Cover the screen before first paint on the session's first load, so
+            the intro animation doesn't flash the page underneath. The React
+            IntroAnimation removes this when the logo flies off; a timeout is a
+            safety net if JS never hydrates. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{if(sessionStorage.getItem('cs-intro')==='1')return;if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;var d=document.documentElement;d.classList.add('cs-intro-cover');setTimeout(function(){d.classList.remove('cs-intro-cover');},3500);}catch(e){}})();",
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
